@@ -1,0 +1,172 @@
+---
+title: \vspace{-1.5cm} \textbf{STA610 Case Study 2 Report}
+author:
+- Cole Juracek 
+- Lauren Palazzo 
+- Lingyu Zhou 
+- Fan Zhu
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+fontsize: 11pt
+geometry: margin=2cm
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache=TRUE)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(pacman)
+pacman::p_load(tidyverse, lme4, gridExtra, grid, ggplot2, lattice, redres, stringr, influence.ME, knitr, GGally, corrplot, brms, rstan, cowplot, directlabels, tidybayes)
+# devtools::install_github("goodekat/redres")
+rstan_options(auto_write=TRUE)
+options(mc.cores=parallel::detectCores())
+```
+
+```{r, warning=FALSE, message=FALSE, error=FALSE}
+VS <- read.delim("voter_stats_20201103.txt", header = TRUE)
+HS <- read.delim("history_stats_20201103.txt", header = TRUE)
+```
+
+```{r}
+# aggregate
+VS_aggregated <- aggregate(VS$total_voters,
+                             list(County=VS$county_desc,
+                                  Precinct=VS$precinct_abbrv,
+                                  Vtd=VS$vtd_abbrv,
+                                  Age=VS$age,
+                                  Party=VS$party_cd,
+                                  Race=VS$race_code,
+                                  Ethnic=VS$ethnic_code,
+                                  Sex=VS$sex_code),sum) %>%
+  rename(total_voter = x)
+
+HS_aggregated <- aggregate(HS$total_voters,
+                             list(County=HS$county_desc,
+                                  Precinct=HS$precinct_abbrv,
+                                  Vtd=HS$vtd_abbrv,
+                                  Age=HS$age,
+                                  Party=HS$party_cd,
+                                  Race=HS$race_code,
+                                  Ethnic=HS$ethnic_code,
+                                  Sex=HS$sex_code),sum) %>%
+  rename(total_voter = x)
+```
+
+```{r}
+# discard election_date,stats_type, and update_date. 
+county_list <-  unique(HS_aggregated$County)
+
+set.seed(1234)
+sample_list <- sample(county_list, size=30, replace=FALSE)
+
+VS_sampled <- VS_aggregated %>%
+  filter(County %in% sample_list)
+
+HS_sampled <- HS_aggregated %>%
+  filter(County %in% sample_list)
+```
+
+
+```{r, include = FALSE}
+# discard election_date,stats_type, and update_date. 
+county_list <-  unique(HS$county_desc)
+
+set.seed(1234)
+sample_list <- sample(county_list, size=30, replace=FALSE)
+
+VS_sampled <- VS_aggregated %>%
+  select(-c(election_date, stats_type, update_date)) %>%
+  filter(county_desc %in% sample_list)
+
+HS_sampled <- HS_aggregated %>%
+  select(-c(election_date, stats_type, update_date)) %>%
+  filter(county_desc %in% sample_list)
+```
+
+```{r}
+# merge 
+df = full_join(VS_sampled, HS_sampled, by = c("County"="County",
+                                              "Precinct"="Precinct",
+                                              "Vtd"="Vtd",
+                                              "Age"="Age",
+                                              "Party"="Party",
+                                              "Race"="Race",
+                                              "Ethnic"="Ethnic",
+                                              "Sex"="Sex"))
+
+```
+
+
+## EDA
+#### Party by County
+```{r}
+ggplot(df, 
+       aes(x = County, 
+           fill = Party)) + 
+  geom_bar(position = "fill") +
+  labs(y = "Proportion")
+```
+#### Party by Preccint
+```{r}
+ggplot(df, 
+       aes(x = Precinct, 
+           fill = Party)) + 
+  geom_bar(position = "fill") +
+  labs(y = "Proportion")
+```
+
+#### Party by Sex
+```{r}
+ggplot(df, 
+       aes(x = Sex, 
+           fill = Party)) + 
+  geom_bar(position = "fill") +
+  labs(y = "Proportion")
+```
+#### Party by Voter tabulation district 
+```{r}
+ggplot(df, 
+       aes(x = Vtd, 
+           fill = Party)) + 
+  geom_bar(position = "fill") +
+  labs(y = "Proportion")
+```
+
+#### Party by Race
+```{r}
+ggplot(df, 
+       aes(x = Race, 
+           fill = Party)) + 
+  geom_bar(position = "fill") +
+  labs(y = "Proportion")
+```
+#### Party by Ethnic
+```{r}
+ggplot(df, 
+       aes(x = Ethnic, 
+           fill = Party)) + 
+  geom_bar(position = "fill") +
+  labs(y = "Proportion")
+```
+
+## Model
+
+Your job is to use a Bayesian hierarchical model to answer the following questions of interest.
+
+How did different demographic subgroups vote in the 2020 general elections? For example, how did the turnout for males compare to the turnout for females after controlling for other potential predictors?
+Did the overall probability or odds of voting differ by county in 2020? Which counties differ the most from other counties?
+How did the turnout rates differ between females and males for the different party affiliations?
+How did the turnout rates differ between age groups for the different party affiliations?
+
+#### Model Selection
+
+#### Model Specification
+
+#### Model Diagnostics
+
+## Results & Findings
+#### Fixed Effects
+
+#### Random Effects
