@@ -94,7 +94,9 @@ df = full_join(VS_sampled, HS_sampled, by = c("County"="County",
                                               "Party"="Party",
                                               "Race"="Race",
                                               "Ethnic"="Ethnic",
-                                              "Sex"="Sex"))
+                                              "Sex"="Sex")) %>%
+  rename(total_registered_voter = total_voter.x,
+         total_voted_voter = total_voter.y)
 
 ```
 
