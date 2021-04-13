@@ -62,11 +62,9 @@ set.seed(1234)
 sample_list <- sample(county_list, size=30, replace=FALSE)
 
 VS_sampled <- VS_aggregated %>%
-  select(-c(election_date, stats_type, update_date)) %>%
   filter(county_desc %in% sample_list)
 
 HS_sampled <- HS_aggregated %>%
-  select(-c(election_date, stats_type, update_date)) %>%
   filter(county_desc %in% sample_list)
 ```
 
