@@ -84,14 +84,33 @@ df = full_join(VS_sampled, HS_sampled, by = c("County"="County",
 
 ### Missing Data
 
-Some NA's get introduced on the total voters here. Could be a consequence of the full join. But I'm not sure why `total_registered_voter` would have NA's. In any case, it's only 81 - pretty trivial. The other (`total_voted_voter`) is more substantial. This is most likely due to when none of the registered voters for a given group actually voted. Thus, the full join would have produced NA's here. Let's investigate:
+Some NA's get introduced on the total voters here. Could be a consequence of the full join. But I'm not sure why `total_registered_voter` would have NA's. In any case, it's only 81 - pretty trivial. 
+
+The other (`total_voted_voter`) is more substantial. This is potentially due to when none of the registered voters for a given group actually voted. Thus, the full join would have produced NA's here. Let's investigate:
 
 ```{r}
-df %>% filter(is.na(total_voted_voter))
+# Hypothesis - this should produce no rows
+missing_voters <- df %>% filter(is.na(total_voted_voter))
+inner_join(missing_voters, VS_sampled)
 ```
 
+We have a problem - `total_voter` has combinations appearing that show up as NA for `total_voted_voter` in `df`. Let's see an example:
+
+```{r}
+# Bug
+VS_sampled %>% filter(County == 'NASH' & Vtd == '0006' & Precinct == 'P03A' & Age == 'Age 26 - 40' & Party == 'DEM' & Race == 'A')
+df %>% filter(County == 'NASH' & Vtd == '0006' & Precinct == 'P03A' & Age == 'Age 26 - 40' & Party == 'DEM' & Race == 'A')
+```
 
 ## EDA
+
+We are interested in viewing EDA through the following questions:
+
+- How did different demographic subgroups vote in the 2020 general elections? For example, how did the turnout for males compare to the turnout for females after controlling for other potential predictors?
+- Did the overall probability or odds of voting differ by county in 2020? Which counties differ the most from other counties?
+- How did the turnout rates differ between females and males for the different party affiliations?
+- How did the turnout rates differ between age groups for the different party affiliations?
+
 #### Party by County
 ```{r}
 ggplot(df, 
