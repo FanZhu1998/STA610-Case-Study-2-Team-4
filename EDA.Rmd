@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = FALSE, cache=TRUE)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 library(pacman)
-pacman::p_load(tidyverse, lme4, gridExtra, grid, ggplot2, lattice, redres, stringr, influence.ME, knitr, GGally, corrplot, brms, rstan, cowplot, directlabels, tidybayes)
+pacman::p_load(tidyverse, lme4, gridExtra, grid, lattice, influence.ME, knitr, GGally, corrplot, rstan, brms, cowplot, directlabels, tidybayes)
 # devtools::install_github("goodekat/redres")
 rstan_options(auto_write=TRUE)
 options(mc.cores=parallel::detectCores())
@@ -82,7 +82,14 @@ df = full_join(VS_sampled, HS_sampled, by = c("County"="County",
          total_voted_voter = total_voter.y)
 ```
 
-Some NA's get introduced on the total voters here. Could be a consequence of the full join. But I'm not sure why `total_registered_voter` would have NA's. In any case, it's only 81 - pretty trivial. The other (`total_voted_voter`) is more substantial
+### Missing Data
+
+Some NA's get introduced on the total voters here. Could be a consequence of the full join. But I'm not sure why `total_registered_voter` would have NA's. In any case, it's only 81 - pretty trivial. The other (`total_voted_voter`) is more substantial. This is most likely due to when none of the registered voters for a given group actually voted. Thus, the full join would have produced NA's here. Let's investigate:
+
+```{r}
+df %>% filter(is.na(total_voted_voter))
+```
+
 
 ## EDA
 #### Party by County
