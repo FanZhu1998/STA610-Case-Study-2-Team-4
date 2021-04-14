@@ -62,10 +62,10 @@ set.seed(1234)
 sample_list <- sample(county_list, size=30, replace=FALSE)
 
 VS_sampled <- VS_aggregated %>%
-  filter(county_desc %in% sample_list)
+  filter(County %in% sample_list)
 
 HS_sampled <- HS_aggregated %>%
-  filter(county_desc %in% sample_list)
+  filter(County %in% sample_list)
 ```
 
 ```{r}
@@ -80,9 +80,9 @@ df = full_join(VS_sampled, HS_sampled, by = c("County"="County",
                                               "Sex"="Sex")) %>%
   rename(total_registered_voter = total_voter.x,
          total_voted_voter = total_voter.y)
-
 ```
 
+Some NA's get introduced on the total voters here. Could be a consequence of the full join. But I'm not sure why `total_registered_voter` would have NA's. In any case, it's only 81 - pretty trivial. The other (`total_voted_voter`) is more substantial
 
 ## EDA
 #### Party by County
@@ -91,7 +91,8 @@ ggplot(df,
        aes(x = County, 
            fill = Party)) + 
   geom_bar(position = "fill") +
-  labs(y = "Proportion")
+  labs(y = "Proportion") +
+    theme(axis.text.x=element_text(angle = 90))
 ```
 #### Party by Preccint
 ```{r}
