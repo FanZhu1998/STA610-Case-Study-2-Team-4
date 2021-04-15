@@ -91,7 +91,15 @@ The other (`total_voted_voter`) is more substantial. This is potentially due to 
 ```{r}
 # Hypothesis - this should produce no rows
 missing_voters <- df %>% filter(is.na(total_voted_voter))
-inner_join(missing_voters, VS_sampled)
+inner_join(missing_voters, VS_sampled, 
+           by=c('County' = 'County', 
+                'Precinct' = 'Precinct', 
+                'Vtd' = 'Vtd', 
+                'Age' = 'Age', 
+                'Party' = 'Party', 
+                'Race' = 'Race', 
+                'Ethnic' = 'Ethnic', 
+                'Sex' = 'Sex'))
 ```
 
 We have a problem - `total_voter` has combinations appearing that show up as NA for `total_voted_voter` in `df`. Let's see an example:
@@ -102,6 +110,14 @@ VS_sampled %>% filter(County == 'NASH' & Vtd == '0006' & Precinct == 'P03A' & Ag
 df %>% filter(County == 'NASH' & Vtd == '0006' & Precinct == 'P03A' & Age == 'Age 26 - 40' & Party == 'DEM' & Race == 'A')
 ```
 
+Finally, we seem to have some rows where the number of voters *exceeds* the number of registered voters. This presumably should never happen:
+
+```{r}
+df %>% filter(total_registered_voter < total_voted_voter)
+```
+
+At least it's only 73 rows
+
 ## EDA
 
 We are interested in viewing EDA through the following questions:
@@ -111,25 +127,38 @@ We are interested in viewing EDA through the following questions:
 - How did the turnout rates differ between females and males for the different party affiliations?
 - How did the turnout rates differ between age groups for the different party affiliations?
 
-#### Party by County
+First, let's check the voter turnout for the marginal categories of all subgroups:
+
 ```{r}
-ggplot(df, 
-       aes(x = County, 
-           fill = Party)) + 
-  geom_bar(position = "fill") +
-  labs(y = "Proportion") +
-    theme(axis.text.x=element_text(angle = 90))
-```
-#### Party by Preccint
-```{r}
-ggplot(df, 
-       aes(x = Precinct, 
-           fill = Party)) + 
-  geom_bar(position = "fill") +
-  labs(y = "Proportion")
+# Remove NA values for plotting purposes
+df_plot <- df %>% filter(!is.na(total_voted_voter) & !is.na(total_registered_voter))
 ```
 
-#### Party by Sex
+```{r}
+df_plot %>% 
+    group_by(Race) %>% 
+    summarise(prop=sum(total_voted_voter) / sum(total_registered_voter)) %>% 
+    ggplot(aes(x=Race, y=prop, fill=Race)) + geom_col()
+
+df_plot %>% 
+    group_by(Age) %>% 
+    summarise(prop=sum(total_voted_voter) / sum(total_registered_voter)) %>% 
+    ggplot(aes(x=Age, y=prop, fill=Age)) + geom_col()
+
+for(var in c('County', 'Age', 'Party', 'Race', 'Ethnic', 'Sex')) {
+    p <- df_plot %>% 
+        group_by_at(var) %>% 
+        summarise(prop=sum(total_voted_voter) / sum(total_registered_voter)) %>% 
+        ggplot(aes_string(x=var, y='prop', fill=var)) + geom_col()
+    plot(p)
+}
+```
+
+```{r}
+
+```
+
+
 ```{r}
 ggplot(df, 
        aes(x = Sex, 
@@ -137,48 +166,8 @@ ggplot(df,
   geom_bar(position = "fill") +
   labs(y = "Proportion")
 ```
-#### Party by Voter tabulation district 
+
 ```{r}
-ggplot(df, 
-       aes(x = Vtd, 
-           fill = Party)) + 
-  geom_bar(position = "fill") +
-  labs(y = "Proportion")
+table(df_plot$Precinct)
 ```
 
-#### Party by Race
-```{r}
-ggplot(df, 
-       aes(x = Race, 
-           fill = Party)) + 
-  geom_bar(position = "fill") +
-  labs(y = "Proportion")
-```
-#### Party by Ethnic
-```{r}
-ggplot(df, 
-       aes(x = Ethnic, 
-           fill = Party)) + 
-  geom_bar(position = "fill") +
-  labs(y = "Proportion")
-```
-
-## Model
-
-Your job is to use a Bayesian hierarchical model to answer the following questions of interest.
-
-How did different demographic subgroups vote in the 2020 general elections? For example, how did the turnout for males compare to the turnout for females after controlling for other potential predictors?
-Did the overall probability or odds of voting differ by county in 2020? Which counties differ the most from other counties?
-How did the turnout rates differ between females and males for the different party affiliations?
-How did the turnout rates differ between age groups for the different party affiliations?
-
-#### Model Selection
-
-#### Model Specification
-
-#### Model Diagnostics
-
-## Results & Findings
-#### Fixed Effects
-
-#### Random Effects
