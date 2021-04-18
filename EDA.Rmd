@@ -82,41 +82,43 @@ df = full_join(VS_sampled, HS_sampled, by = c("County"="County",
          total_voted_voter = total_voter.y)
 ```
 
-### Missing Data
+### Data Problems
 
-Some NA's get introduced on the total voters here. Could be a consequence of the full join. But I'm not sure why `total_registered_voter` would have NA's. In any case, it's only 81 - pretty trivial. 
+1/2. NA's in `total_registered_voter` / `total_voted_voter`
+3. `total_voted_voter` > `total_registered_voter`
 
-The other (`total_voted_voter`) is more substantial. This is potentially due to when none of the registered voters for a given group actually voted. Thus, the full join would have produced NA's here. Let's investigate:
+1. 
 
 ```{r}
-# Hypothesis - this should produce no rows
-missing_voters <- df %>% filter(is.na(total_voted_voter))
-inner_join(missing_voters, VS_sampled, 
-           by=c('County' = 'County', 
-                'Precinct' = 'Precinct', 
-                'Vtd' = 'Vtd', 
-                'Age' = 'Age', 
-                'Party' = 'Party', 
-                'Race' = 'Race', 
-                'Ethnic' = 'Ethnic', 
-                'Sex' = 'Sex'))
+df %>% filter(is.na(total_registered_voter))
+```
+Only 81 - filter out:
+
+```{r}
+df <- df %>% filter(!is.na(total_registered_voter))
 ```
 
-We have a problem - `total_voter` has combinations appearing that show up as NA for `total_voted_voter` in `df`. Let's see an example:
+2. 
 
 ```{r}
-# Bug
-VS_sampled %>% filter(County == 'NASH' & Vtd == '0006' & Precinct == 'P03A' & Age == 'Age 26 - 40' & Party == 'DEM' & Race == 'A')
-df %>% filter(County == 'NASH' & Vtd == '0006' & Precinct == 'P03A' & Age == 'Age 26 - 40' & Party == 'DEM' & Race == 'A')
+df %>% filter(is.na(total_voted_voter))
+```
+This is presumably an artifact of the full join. We hypothesize that NAs exist because there are categories with registered voters that didn't vote. Because of this, we will set these to 0:
+
+```{r}
+df$total_voted_voter <- df %>% pull(total_voted_voter) %>% replace_na(0)
 ```
 
 Finally, we seem to have some rows where the number of voters *exceeds* the number of registered voters. This presumably should never happen:
 
 ```{r}
-df %>% filter(total_registered_voter < total_voted_voter)
+df %>% filter(total_voted_voter > total_registered_voter)
 ```
+Only 73 rows - not a huge problem. We don't see a scenario where this makes sense, and will assume error in data collection. We will remove these rows:
 
-At least it's only 73 rows
+```{r}
+df <- df %>% filter(total_voted_voter <= total_registered_voter)
+```
 
 ## EDA
 
@@ -135,16 +137,6 @@ df_plot <- df %>% filter(!is.na(total_voted_voter) & !is.na(total_registered_vot
 ```
 
 ```{r}
-df_plot %>% 
-    group_by(Race) %>% 
-    summarise(prop=sum(total_voted_voter) / sum(total_registered_voter)) %>% 
-    ggplot(aes(x=Race, y=prop, fill=Race)) + geom_col()
-
-df_plot %>% 
-    group_by(Age) %>% 
-    summarise(prop=sum(total_voted_voter) / sum(total_registered_voter)) %>% 
-    ggplot(aes(x=Age, y=prop, fill=Age)) + geom_col()
-
 for(var in c('County', 'Age', 'Party', 'Race', 'Ethnic', 'Sex')) {
     p <- df_plot %>% 
         group_by_at(var) %>% 
@@ -154,20 +146,45 @@ for(var in c('County', 'Age', 'Party', 'Race', 'Ethnic', 'Sex')) {
 }
 ```
 
-```{r}
-
-```
-
+Next, we'll investigate the interactions between party affiliation and gender / age group (research questions of interest)
 
 ```{r}
-ggplot(df, 
-       aes(x = Sex, 
-           fill = Party)) + 
-  geom_bar(position = "fill") +
-  labs(y = "Proportion")
+df_plot %>% 
+  group_by(Sex) %>% 
+  mutate(prop=sum(total_voted_voter) / sum(total_registered_voter)) %>% 
+  ggplot(aes(x=Party, y=prop, fill=Sex)) + 
+  geom_bar(position="fill", stat="identity")
+
+df_plot %>% 
+  group_by(Age) %>% 
+  mutate(prop=sum(total_voted_voter) / sum(total_registered_voter)) %>% 
+  ggplot(aes(x=Age, y=prop, fill=Party)) + 
+  geom_bar(position="fill", stat="identity")
 ```
 
-```{r}
-table(df_plot$Precinct)
-```
+# Model Building
 
+Based on the research questions of interest, we would like to include:
+
+- Sex
+- Age
+- Party
+- Sex + Party interaction
+- Age + Party interaction
+- County
+
+Research question one also suggests different demographic subgroups, so including race and ethnic makes sense. What about the remaining variables (precinct + vtd)?
+
+- Precinct has a very large number of levels (560), some are missing, and it's not immediately clear what a precinct is for analysis purposes. Likely ignore.
+- Vtd faces the exact same problems as precinct. Ignore for now.
+
+Thus we can propose the initial Bayesian binomial mixed effects regression model:
+
+$$
+y_{ij} | x_{ij} \sim Bin(n_i, \pi_{ij}) \\
+logit(\pi_{ij}) = \beta_0 + \beta s_i + \beta A_i + \beta P_i + \beta (A_i * P_i) + \beta (A_i * S_i) + b_{0j} \\
+b_{0j} \sim N(0, \tau^2) \\
+p(\beta_0) \sim N(0, ?) \\
+p(\beta) \sim MVN(0, ?) \\
+p(\tau^2)  \sim Inv-gamma(?, ?)
+$$
