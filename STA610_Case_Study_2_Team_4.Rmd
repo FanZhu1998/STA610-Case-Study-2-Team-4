@@ -70,7 +70,7 @@ HS_sampled <- HS_aggregated %>%
 
 ```{r}
 # merge 
-df = full_join(VS_sampled, HS_sampled, by = c("County"="County",
+df <-  full_join(VS_sampled, HS_sampled, by = c("County"="County",
                                               "Precinct"="Precinct",
                                               "Vtd"="Vtd",
                                               "Age"="Age",
@@ -79,61 +79,112 @@ df = full_join(VS_sampled, HS_sampled, by = c("County"="County",
                                               "Ethnic"="Ethnic",
                                               "Sex"="Sex")) %>%
   rename(total_registered_voter = total_voter.x,
-         total_voted_voter = total_voter.y)
+         total_voted_voter = total_voter.y) %>%
+  filter(!is.na(total_registered_voter)) %>%
+  replace(is.na(.), 0) %>%
+  mutate(Turnout = total_voted_voter/total_registered_voter)
 
+# sum(is.na(df$total_voted_voter))
+# hist(df$Turnout)
 ```
 
 
 ## EDA
-#### Party by County
+#### County
 ```{r}
+# Party by County
 ggplot(df, 
        aes(x = County, 
            fill = Party)) + 
   geom_bar(position = "fill") +
-  labs(y = "Proportion")
+  labs(y = "Proportion") + 
+  coord_flip()
+
+# Turnout by County
+ggplot(df, aes(x = County,
+               y= Turnout, 
+               fill = County)) + 
+    geom_boxplot() 
+
 ```
-#### Party by Preccint
+#### Preccint
 ```{r}
+# Party by Preccint
 ggplot(df, 
        aes(x = Precinct, 
            fill = Party)) + 
   geom_bar(position = "fill") +
-  labs(y = "Proportion")
+  labs(y = "Proportion") + 
+  coord_flip()
+
+# Turnout by Precinct
+ggplot(df, aes(x = Precinct,
+               y= Turnout, 
+               fill = Precinct)) + 
+    geom_boxplot() 
 ```
 
-#### Party by Sex
+#### Sex
 ```{r}
+# Party by Sex
 ggplot(df, 
        aes(x = Sex, 
            fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion")
+
+# Turnout by Sex
+ggplot(df, aes(x = Sex,
+               y= Turnout, 
+               fill = Sex)) + 
+    geom_boxplot() 
 ```
-#### Party by Voter tabulation district 
+
+#### Voter tabulation district 
 ```{r}
+# Party by Voter tabulation district 
 ggplot(df, 
        aes(x = Vtd, 
            fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion")
+
+# Turnout by Vtd
+ggplot(df, aes(x = Vtd,
+               y= Turnout, 
+               fill = Vtd)) + 
+    geom_boxplot() 
 ```
 
-#### Party by Race
+#### Race
 ```{r}
+# Party by Race
 ggplot(df, 
        aes(x = Race, 
            fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion")
+
+# Turnout by Race
+ggplot(df, aes(x = Race,
+               y= Turnout, 
+               fill = Race)) + 
+    geom_boxplot() 
 ```
-#### Party by Ethnic
+#### Ethnic
 ```{r}
+# Party by Ethnic
 ggplot(df, 
        aes(x = Ethnic, 
            fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion")
+
+# Turnout by Ethnic
+ggplot(df, aes(x = Ethnic,
+               y= Turnout, 
+               fill = Ethnic)) + 
+    geom_boxplot() 
 ```
 
 ## Model
