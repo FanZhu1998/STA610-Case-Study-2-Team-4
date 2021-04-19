@@ -187,6 +187,48 @@ ggplot(df, aes(x = Ethnic,
     geom_boxplot() 
 ```
 
+#### Age
+```{r}
+# Party by Age
+ggplot(df, 
+       aes(x = Age, 
+           fill = Party)) + 
+  geom_bar(position = "fill") +
+  labs(y = "Proportion")
+
+# Turnout by Age
+ggplot(df, aes(x = Age,
+               y= Turnout, 
+               fill = Age)) + 
+    geom_boxplot() 
+```
+
+#### Party
+```{r}
+# Pie Chart by Party
+ggplot(df, aes(x=factor(1), fill=Party))+
+  geom_bar(width = 1)+
+  coord_polar("y")  + 
+  labs(x = NULL, 
+       y = NULL, 
+       fill = NULL, 
+       title = "Pie Chart by Party") + 
+  theme_classic() + 
+  theme(axis.line = element_blank(),
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          plot.title = element_text(hjust = 0.5, color = "#666666"))
+
+
+
+# Turnout by Party
+ggplot(df, aes(x = Party,
+               y= Turnout, 
+               fill = Party)) + 
+    geom_boxplot() 
+```
+
+
 ## Model
 
 Your job is to use a Bayesian hierarchical model to answer the following questions of interest.
