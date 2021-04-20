@@ -89,7 +89,9 @@ df <-  full_join(VS_sampled, HS_sampled, by = c("County"="County",
 # hist(df$Turnout)
 ```
 ## Introduction
-In this case study, we have built a Bayesian hierarchical model for the 2020 Presidential Election to investigate how different demographic variables lead to the turnout rates and the evidence of heterogeneity across counties. Our data sets include both the aggregate counts of registered voters and voters who actually voted by the demographic variables. 
+The United States have record-high turnout rates in 2020 over a century. So in this case study, we have built a Bayesian hierarchical model for the 2020 Presidential Election to investigate how different demographic variables lead to different turnout rates and the evidence of heterogeneity across counties. Our data sets come from the North Carolina State Board of Elections (NCSBE), which provides data on both the aggregate counts of registered voters and voters who actually voted by the demographic variables. 
+
+Our question of interests is the turn out rate, which is calculated as dividing the total counts of voters who actually voted by the total counts of voters who registered, aggregating all other demographic variables. The potential predictors include the the county, voter tabulation district, age, sex, race, ethnicity and party of the voters. There variables present a natural grouping structure for the turnout rate. Therefore, a Bayesian hierarchical model in this case has the advantages of "borrowing information" from the data set as a whole to stabilize estimates of the turnout rate in groups with relatively small sample size as well as fitting a large amount of random variance in a complex model. 
 
 
 ## EDA
