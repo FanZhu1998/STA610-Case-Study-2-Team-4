@@ -285,3 +285,9 @@ How did the turnout rates differ between age groups for the different party affi
 #### Fixed Effects
 
 #### Random Effects
+
+\newpage
+## Appendix
+
+```{r, ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```
