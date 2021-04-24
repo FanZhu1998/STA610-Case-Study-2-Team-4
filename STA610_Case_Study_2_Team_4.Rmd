@@ -70,7 +70,7 @@ HS_sampled <- HS_aggregated %>%
 
 ```{r}
 # merge 
-df = full_join(VS_sampled, HS_sampled, by = c("County"="County",
+df <-  full_join(VS_sampled, HS_sampled, by = c("County"="County",
                                               "Precinct"="Precinct",
                                               "Vtd"="Vtd",
                                               "Age"="Age",
@@ -79,64 +79,194 @@ df = full_join(VS_sampled, HS_sampled, by = c("County"="County",
                                               "Ethnic"="Ethnic",
                                               "Sex"="Sex")) %>%
   rename(total_registered_voter = total_voter.x,
-         total_voted_voter = total_voter.y)
+         total_voted_voter = total_voter.y) %>%
+  filter(!is.na(total_registered_voter)) %>%
+  replace(is.na(.), 0) %>%
+  mutate(Turnout = total_voted_voter/total_registered_voter) %>%
+  filter(Turnout <= 1)
 
+# sum(is.na(df$total_voted_voter))
+# hist(df$Turnout)
 ```
+## Introduction
+The United States have record-high turnout rates in 2020 over a century. So in this case study, we have built a Bayesian hierarchical model for the 2020 Presidential Election to investigate how different demographic variables lead to different turnout rates and the evidence of heterogeneity across counties. Our data sets come from the North Carolina State Board of Elections (NCSBE), which provides data on both the aggregate counts of registered voters and voters who actually voted by the demographic variables. 
+
+Our question of interests is the turn out rate, which is calculated as dividing the total counts of voters who actually voted by the total counts of voters who registered, aggregating all other demographic variables. The potential predictors include the the county, voter tabulation district, age, sex, race, ethnicity and party of the voters. There variables present a natural grouping structure for the turnout rate. Therefore, a Bayesian hierarchical model in this case has the advantages of "borrowing information" from the data set as a whole to stabilize estimates of the turnout rate in groups with relatively small sample size as well as fitting a large amount of random variance in a complex model. 
 
 
 ## EDA
-#### Party by County
-```{r}
-ggplot(df, 
+#### County
+```{r, fig.align='center', fig.height=4}
+# Party by County
+PartybyCounty <- ggplot(df, 
        aes(x = County, 
            fill = Party)) + 
   geom_bar(position = "fill") +
-  labs(y = "Proportion")
+  labs(y = "Proportion") + 
+  coord_flip()
+# PartybyCounty
+
+# Turnout by County
+box_County <- ggplot(df, aes(x = County,
+               y= Turnout, 
+               fill = County)) + 
+    geom_boxplot() + 
+  coord_flip()
+box_County
+
 ```
-#### Party by Preccint
-```{r}
+From the boxplot we can see that the median turnout rates do differ by county, which justifies the random intercepts by county in our model.
+
+
+```{r, include = FALSE}
+#### Preccint
+# Party by Preccint
 ggplot(df, 
        aes(x = Precinct, 
            fill = Party)) + 
   geom_bar(position = "fill") +
-  labs(y = "Proportion")
+  labs(y = "Proportion") + 
+  coord_flip()
+
+# Turnout by Precinct
+ggplot(df, aes(x = Precinct,
+               y= Turnout, 
+               fill = Precinct)) + 
+    geom_boxplot() 
 ```
 
-#### Party by Sex
-```{r}
-ggplot(df, 
+#### Sex
+```{r, fig.align='center', fig.height=2}
+# Party by Sex
+PartybySex <- ggplot(df, 
        aes(x = Sex, 
            fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion")
+
+# Turnout by Sex
+box_Sex <- ggplot(df, aes(x = Sex,
+               y= Turnout, 
+               fill = Sex)) + 
+    geom_boxplot() 
+
+grid.arrange(PartybySex, box_Sex, ncol = 2)
 ```
-#### Party by Voter tabulation district 
-```{r}
+From the boxplot we can see that the median turn out rate in male is the lowest among the genders. There is a higher proportion in female who vote for Democrats than the proportions in other genders.
+
+```{r, include = FALSE}
+#### Voter tabulation district 
+# Party by Voter tabulation district 
 ggplot(df, 
        aes(x = Vtd, 
            fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion")
+
+# Turnout by Vtd
+ggplot(df, aes(x = Vtd,
+               y= Turnout, 
+               fill = Vtd)) + 
+    geom_boxplot() 
 ```
 
-#### Party by Race
-```{r}
-ggplot(df, 
+#### Race
+```{r, fig.align='center', fig.height=2}
+# Party by Race
+PartybyRace <- ggplot(df, 
        aes(x = Race, 
            fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion")
+
+# Turnout by Race
+box_Race <- ggplot(df, aes(x = Race,
+               y= Turnout, 
+               fill = Race)) + 
+    geom_boxplot() 
+
+grid.arrange(PartybyRace, box_Race, ncol = 2)
 ```
-#### Party by Ethnic
-```{r}
-ggplot(df, 
+The median turn out rates do differ a lot by race, which necessitates us to include a main effect of race in our model. The proportion of voting for Democrats is the highest in African American than in other race.
+
+
+#### Ethnic
+```{r, fig.align='center', fig.height=2}
+# Party by Ethnic
+PartybyEthnic <- ggplot(df, 
        aes(x = Ethnic, 
            fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion")
+
+# Turnout by Ethnic
+box_Ethnic <- ggplot(df, aes(x = Ethnic,
+               y= Turnout, 
+               fill = Ethnic)) + 
+    geom_boxplot() 
+
+grid.arrange(PartybyEthnic, box_Ethnic, ncol = 2)
 ```
+The proportion of voting for Democrats is the highest in Hispanic than in other ethnicity, but the median turn out rate in Hispanic is the lowest. 
+
+#### Age
+```{r, fig.align='center', fig.height=2}
+# Party by Age
+PartybyAge <- ggplot(df, 
+       aes(x = Age, 
+           fill = Party)) + 
+  geom_bar(position = "fill") +
+  labs(y = "Proportion") + 
+  coord_flip()
+
+# Turnout by Age
+box_Age <- ggplot(df, aes(x = Age,
+               y= Turnout, 
+               fill = Age)) + 
+    geom_boxplot() + 
+  coord_flip()
+
+grid.arrange(PartybyAge, box_Age, ncol = 2)
+```
+As people grow older, their turn out rates tend to increase and there is a higher proportion of people voting for Republicans. Thus we will incorporate a main effect of age in our model. 
+
+#### Party
+```{r, fig.align='center', fig.height=2}
+# Pie Chart by Party
+Pie_Party <- ggplot(df, aes(x=factor(1), fill=Party))+
+  geom_bar(width = 1)+
+  coord_polar("y")  + 
+  labs(x = NULL, 
+       y = NULL, 
+       fill = NULL, 
+       title = "Pie Chart by Party") + 
+  theme_classic() + 
+  theme(axis.line = element_blank(),
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          plot.title = element_text(hjust = 0.5, color = "#666666"))
+
+# Turnout by Party
+box_Party <- ggplot(df, aes(x = Party,
+               y= Turnout, 
+               fill = Party)) + 
+    geom_boxplot() 
+
+grid.arrange(Pie_Party, box_Party, ncol = 2)
+```
+From the pie chart we can see that the winning party is the Democrats and there is approximately same proportion for the unaffiliated party as the Democrats. The distributions of turn out rates do differ a lot by Party, which justifies a main effect of Party in our model.
 
 ## Model
+
+$$
+y_{ij} | x_{ij} \sim Bin(n_i, \pi_{ij}) \\
+logit(\pi_{ij}) = \beta_0 + \beta s_i + \beta A_i + \beta P_i + \beta (A_i * P_i) + \beta (A_i * S_i) + b_{0j} \\
+b_{0j} \sim N(0, \tau^2) \\
+p(\beta_0) \sim N(0, ?) \\
+p(\beta) \sim MVN(0, ?) \\
+p(\tau^2)  \sim \text{Inv-gamma}(?, ?)
+$$
+
 
 Your job is to use a Bayesian hierarchical model to answer the following questions of interest.
 
