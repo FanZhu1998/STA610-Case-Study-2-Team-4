@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = FALSE, cache=TRUE)
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 library(pacman)
-pacman::p_load(tidyverse, lme4, gridExtra, grid, ggplot2, lattice, redres, stringr, influence.ME, knitr, GGally, corrplot, brms, rstan, cowplot, directlabels, tidybayes)
+pacman::p_load(tidyverse, lme4, gridExtra, grid, ggplot2, lattice, redres, stringr, influence.ME, knitr, GGally, corrplot, brms, rstan, cowplot, directlabels, tidybayes, parallel)
 # devtools::install_github("goodekat/redres")
 rstan_options(auto_write=TRUE)
 options(mc.cores=parallel::detectCores())
@@ -96,10 +96,12 @@ The United States have record-high turnout rates in 2020 over a century. So in t
 
 Our question of interests is the turn out rate, which is calculated as dividing the total counts of voters who actually voted by the total counts of voters who registered, aggregating all other demographic variables. The potential predictors include the the county, voter tabulation district, age, sex, race, ethnicity and party of the voters. There variables present a natural grouping structure for the turnout rate. Therefore, a Bayesian hierarchical model in this case has the advantages of "borrowing information" from the data set as a whole to stabilize estimates of the turnout rate in groups with relatively small sample size as well as fitting a large amount of random variance in a complex model. 
 
+To reduce the computational complexity and get better estimates, we randomly sampled 30 counties from our datasets. We also cleaned the datasets by removing those observations with 'NA's in their total counts of registered voters as well as the cases where the total counts of voters who actually voted exeeded the total counts of registered voters. Those abnormalies are most likely due to measurement errors. 
+
 
 ## EDA
 #### County
-```{r, fig.align='center', fig.height=4}
+```{r, fig.align='center', fig.height=3.6}
 # Party by County
 PartybyCounty <- ggplot(df, 
        aes(x = County, 
@@ -114,7 +116,8 @@ box_County <- ggplot(df, aes(x = County,
                y= Turnout, 
                fill = County)) + 
     geom_boxplot() + 
-  coord_flip()
+  coord_flip() + 
+  theme(legend.position = "none")
 box_County
 
 ```
@@ -280,6 +283,9 @@ How did the turnout rates differ between age groups for the different party affi
 
 #### Model Selection
 
+
+
+
 #### Model Specification
 
 #### Model Diagnostics
@@ -288,9 +294,3 @@ How did the turnout rates differ between age groups for the different party affi
 #### Fixed Effects
 
 #### Random Effects
-
-\newpage
-## Appendix
-
-```{r, ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
-```
