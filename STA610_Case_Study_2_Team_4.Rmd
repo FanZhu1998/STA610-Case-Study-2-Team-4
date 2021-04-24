@@ -58,7 +58,7 @@ HS_aggregated <- aggregate(HS$total_voters,
 # discard election_date,stats_type, and update_date. 
 county_list <-  unique(HS_aggregated$County)
 
-set.seed(1234)
+set.seed(149)
 sample_list <- sample(county_list, size=30, replace=FALSE)
 
 VS_sampled <- VS_aggregated %>%
@@ -90,6 +90,43 @@ df <-  full_join(VS_sampled, HS_sampled, by = c("County"="County",
   filter(total_voted_voter <= total_registered_voter) %>% 
   mutate(total_registered_voter = as.numeric(total_registered_voter),
          total_voted_voter = as.numeric(total_voted_voter))
+```
+
+```{r}
+calculate_nrows <- function(seed) {
+  set.seed(seed)
+  sample_list <- sample(county_list, size=30, replace=FALSE)
+  
+  VS_sampled <- VS_aggregated %>%
+    filter(County %in% sample_list)
+  
+  HS_sampled <- HS_aggregated %>%
+    filter(County %in% sample_list)
+  
+  df <-  full_join(VS_sampled, HS_sampled, by = c("County"="County",
+                                              "Precinct"="Precinct",
+                                              "Vtd"="Vtd",
+                                              "Age"="Age",
+                                              "Party"="Party",
+                                              "Race"="Race",
+                                              "Ethnic"="Ethnic",
+                                              "Sex"="Sex")) %>%
+  rename(total_registered_voter = total_voter.x,
+         total_voted_voter = total_voter.y) %>%
+  # Some categories had registered voters that didn't vote - replace with 0
+  mutate(total_voted_voter = replace_na(total_voted_voter, 0)) %>%
+  
+  # No reason registered voters should be missing - remove these
+  filter(!is.na(total_registered_voter)) %>% 
+  
+  # Voters should not be greater than the number registered - remove these
+  filter(total_voted_voter <= total_registered_voter) %>% 
+  mutate(total_registered_voter = as.numeric(total_registered_voter),
+         total_voted_voter = as.numeric(total_voted_voter))
+  return(nrow(df))
+}
+
+rows <- sapply(100:150, calculate_nrows)
 ```
 
 ## Introduction
