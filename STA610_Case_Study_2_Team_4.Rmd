@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = FALSE, cache=TRUE)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
-library(pacman)
+if (!require(pacman)) install.packages("pacman")
 pacman::p_load(tidyverse, lme4, gridExtra, grid, ggplot2, lattice, redres, stringr, influence.ME, knitr, GGally, corrplot, brms, rstan, cowplot, directlabels, tidybayes)
 # devtools::install_github("goodekat/redres")
 rstan_options(auto_write=TRUE)
