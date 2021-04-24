@@ -1,0 +1,247 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache=TRUE)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(pacman)
+pacman::p_load(tidyverse, lme4, gridExtra, grid, lattice, influence.ME, knitr, GGally, corrplot, rstan, brms, cowplot, directlabels, tidybayes)
+# devtools::install_github("goodekat/redres")
+rstan_options(auto_write=TRUE)
+options(mc.cores=parallel::detectCores())
+```
+
+```{r, warning=FALSE, message=FALSE, error=FALSE}
+VS <- read.delim("voter_stats_20201103.txt", header = TRUE)
+HS <- read.delim("history_stats_20201103.txt", header = TRUE)
+
+# aggregate
+VS_aggregated <- aggregate(VS$total_voters,
+                             list(County=VS$county_desc,
+                                  Precinct=VS$precinct_abbrv,
+                                  Vtd=VS$vtd_abbrv,
+                                  Age=VS$age,
+                                  Party=VS$party_cd,
+                                  Race=VS$race_code,
+                                  Ethnic=VS$ethnic_code,
+                                  Sex=VS$sex_code),sum) %>%
+  rename(total_voter = x)
+
+HS_aggregated <- aggregate(HS$total_voters,
+                             list(County=HS$county_desc,
+                                  Precinct=HS$precinct_abbrv,
+                                  Vtd=HS$vtd_abbrv,
+                                  Age=HS$age,
+                                  Party=HS$party_cd,
+                                  Race=HS$race_code,
+                                  Ethnic=HS$ethnic_code,
+                                  Sex=HS$sex_code),sum) %>%
+  rename(total_voter = x)
+
+# discard election_date,stats_type, and update_date. 
+county_list <-  unique(HS$county_desc)
+
+set.seed(1234)
+sample_list <- sample(county_list, size=30, replace=FALSE)
+
+VS_sampled <- VS_aggregated %>%
+  filter(County %in% sample_list)
+
+HS_sampled <- HS_aggregated %>%
+  filter(County %in% sample_list)
+
+# merge 
+df = full_join(VS_sampled, HS_sampled, by = c("County"="County",
+                                              "Precinct"="Precinct",
+                                              "Vtd"="Vtd",
+                                              "Age"="Age",
+                                              "Party"="Party",
+                                              "Race"="Race",
+                                              "Ethnic"="Ethnic",
+                                              "Sex"="Sex")) %>%
+  rename(total_registered_voter = total_voter.x,
+         total_voted_voter = total_voter.y)
+```
+
+```{r}
+nrow(df)
+```
+
+### Data Problems
+
+```{r}
+df <- df %>% filter(!is.na(total_registered_voter))
+df$total_voted_voter <- df$total_voted_voter %>% replace_na(0)
+df <- df %>% filter(total_voted_voter <= total_registered_voter)
+```
+
+```{r}
+nrow(df)
+df <- df %>% mutate(total_registered_voter = as.numeric(total_registered_voter),
+                    total_voted_voter = as.numeric(total_voted_voter))
+```
+
+# Modeling
+
+$$
+y_{ij} | x_{ij} \sim Bin(n_i, \pi_{ij}) \\
+logit(\pi_{ij}) = \beta_0 + \beta s_i + \beta A_i + \beta P_i + \beta (A_i * P_i) + \beta (A_i * S_i) + b_{0j} \\
+b_{0j} \sim N(0, \tau^2) \\
+p(\beta_0) \sim N(0, ?) \\
+p(\beta) \sim MVN(0, ?) \\
+p(\tau^2)  \sim Inv-gamma(?, ?)
+$$
+
+```{r Initial Model, cache=TRUE}
+# Save as RDS?
+formula <- 'total_voted_voter | trials(total_registered_voter) ~
+            1 + Age*Party + Sex*Party + Race + Ethnic + (1 | County)'
+init_model <- brm(data = df, family = binomial,
+                  formula = formula,
+                  prior = c(prior(normal(0, 10), class = Intercept),
+                            prior(normal(0, 10), class = b)),
+                  iter=50,
+                  cores=detectCores(),
+                  seed=42)
+```
+
+# Evaluate trace plots
+
+`plot` a BRMS model shows trace plots. Can investigate different combinations with `pars` parameter (regex accepted):
+
+- All effects
+- Only fixed effects (default)
+- Random effects ('r_...')
+- Non-interaction terms (Working on it)
+
+```{r}
+#plot(init_model, pars='.*[^:].*', ask=FALSE)
+#plot(init_model, pars='[^:]*', ask=FALSE)
+#plot(init_model, pars='b_[^:]*', ask=FALSE)
+#param <- 'b_PartyREP$'
+params <- c('b_PartyREP', 'sd_County__Intercept', 'r_County[DURHAM,Intercept]')
+plot(init_model, pars=params, fixed=TRUE)
+```
+# Evaluating Predictors
+
+Baseline odds are for:
+- Age: 18-25
+- Party: CST
+- Sex: Female
+- Race: A
+- Ethnic: HL
+
+```{r}
+# Baseline probability
+post <- posterior_samples(init_model)
+post %>% summarise(inv_logit_scaled(b_Intercept))
+```
+
+### Dotplot of random effects
+
+```{r}
+theme_pearl_earring <-
+  theme(text       = element_text(color = "#E8DCCF", family = "Courier"),
+        strip.text = element_text(color = "#E8DCCF", family = "Courier"),
+        axis.text  = element_text(color = "#E8DCCF"),
+        axis.ticks = element_line(color = "#E8DCCF"),
+        line       = element_line(color = "#E8DCCF"),
+        plot.background   = element_rect(fill = "#100F14", color = "transparent"),
+        panel.background  = element_rect(fill = "#100F14", color = "#E8DCCF"),
+        strip.background  = element_rect(fill = "#100F14", color = "transparent"),
+        panel.grid = element_blank(),
+        legend.background = element_rect(fill = "#100F14", color = "transparent"),
+        legend.key        = element_rect(fill = "#100F14", color = "transparent"),
+        axis.line = element_blank())
+```
+
+```{r}
+coef(init_model)$County[, , 1] %>%
+  as.data.frame() %>%
+  mutate(county=rownames(.)) %>% 
+# plot
+ggplot(aes(x = county)) +
+  geom_hline(yintercept = 0, linetype = 3) +
+  geom_pointrange(aes(ymin = Q2.5, ymax = Q97.5, y = Estimate),
+                  shape = 20, size = 3/4, color='white') +
+  scale_color_manual(values = c("#394165", "#A65141")) +
+  #xlab(NULL) +
+  coord_flip() +
+  theme_pearl_earring +
+  theme(legend.position = "none",
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_text(hjust = 0))
+```
+
+
+# Evaluate accuracy
+
+To get accuracy, we first need to recover the probabilities of voting from every group. We convert from the linear predictor to expected counts via the inverse logit (sigmoid) function (conveniently given by `inv_logit_scaled` in `brms`). The problem is that we don't know how to calculate this for every group. Potentially the answer lies somewhere in `predict.brmsfit`
+
+We can predict the expected counts via `predict.brmsfit`. From here, we simply divide by the group size $n_i$ to obtain the probability of voting for a given group $\pi_{ij}$.
+
+```{r}
+# pred_values <- apply(preds, 1, function(row) {
+#   num_voters <- rbinom(1, size=row['total_registered_voter'] %>% as.numeric(), 
+#                        p=row['Estimate'] %>% as.numeric())
+#   total_voters <- row['total_registered_voter'] %>% as.numeric()
+#   if(is.na(num_voters)) {browser()}
+#   voters <- rep(1, num_voters)
+#   #c(rep(1, num_voters), rep(0, total_voters - num_voters))
+# })
+# pred_values <- Reduce(c, pred_values)
+```
+
+# Calculate the raw expected counts per category
+
+```{r}
+fitted_resp <- fitted(init_model)
+```
+
+```{r}
+# Convert from expected counts to probability of success
+est_prob <- fitted_resp[, 'Estimate'] / df$total_registered_voter
+```
+
+```{r}
+# counts <- round(fitted_resp[,'Estimate'])
+# #fitted_bern <- rep(fitted_resp[,'Estimate'], df$total_registered_voter)
+# 
+# individual_counts <- sapply(1:nrow(df), function(i) {
+#   voters <- rep(1, counts[i])
+#   non_voters <- rep(0, df[i, 'total_registered_voter'] - counts[i])
+#   ind_counts <- c(voters, non_voters)
+# })
+# individual_counts <- unlist(individual_counts)
+```
+
+```{r}
+ground_truth_counts <- df$total_voted_voter
+ground_truth <- sapply(1:nrow(df), function(i) {
+  voters <- rep(1, ground_truth_counts[i])
+  non_voters <- rep(0, df[i, 'total_registered_voter'] - ground_truth_counts[i])
+  ind_counts <- c(voters, non_voters)
+})
+ground_truth <- unlist(ground_truth)
+```
+
+Now construct the ROCR curve:
+
+```{r}
+predictions <- rep(est_prob, df$total_registered_voter)
+pred <- ROCR::prediction(predictions, ground_truth)
+```
+
+```{r}
+perf <- performance(pred, "tpr", "fpr")
+plot(perf,
+     avg= "threshold",
+     lwd=3,
+     main='ROC Curve for Predicted Voting')
+abline(coef = c(0,1))
+```
+
