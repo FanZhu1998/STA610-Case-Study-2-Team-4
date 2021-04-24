@@ -139,22 +139,17 @@ Our question of interests is the turn out rate, which is calculated as dividing 
 #### County
 ```{r, fig.align='center', fig.height=4}
 # Party by County
-PartybyCounty <- ggplot(df, 
-       aes(x = County, 
-           fill = Party)) + 
+PartybyCounty <- ggplot(df, aes(x = County, fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion") + 
   coord_flip()
 # PartybyCounty
 
 # Turnout by County
-box_County <- ggplot(df, aes(x = County,
-               y= Turnout, 
-               fill = County)) + 
-    geom_boxplot() + 
+box_County <- ggplot(df, aes(x = County, y= Turnout, fill = County)) + 
+  geom_boxplot() + 
   coord_flip()
 box_County
-
 ```
 From the boxplot we can see that the median turnout rates do differ by county, which justifies the random intercepts by county in our model.
 
@@ -162,33 +157,25 @@ From the boxplot we can see that the median turnout rates do differ by county, w
 ```{r, include = FALSE}
 #### Preccint
 # Party by Preccint
-ggplot(df, 
-       aes(x = Precinct, 
-           fill = Party)) + 
+ggplot(df, aes(x = Precinct, fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion") + 
   coord_flip()
 
 # Turnout by Precinct
-ggplot(df, aes(x = Precinct,
-               y= Turnout, 
-               fill = Precinct)) + 
+ggplot(df, aes(x = Precinct, y= Turnout, fill = Precinct)) + 
     geom_boxplot() 
 ```
 
 #### Sex
 ```{r, fig.align='center', fig.height=2}
 # Party by Sex
-PartybySex <- ggplot(df, 
-       aes(x = Sex, 
-           fill = Party)) + 
+PartybySex <- ggplot(df, aes(x = Sex, fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion")
 
 # Turnout by Sex
-box_Sex <- ggplot(df, aes(x = Sex,
-               y= Turnout, 
-               fill = Sex)) + 
+box_Sex <- ggplot(df, aes(x = Sex, y= Turnout, fill = Sex)) + 
     geom_boxplot() 
 
 grid.arrange(PartybySex, box_Sex, ncol = 2)
@@ -198,32 +185,24 @@ From the boxplot we can see that the median turn out rate in male is the lowest 
 ```{r, include = FALSE}
 #### Voter tabulation district 
 # Party by Voter tabulation district 
-ggplot(df, 
-       aes(x = Vtd, 
-           fill = Party)) + 
+ggplot(df, aes(x = Vtd, fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion")
 
 # Turnout by Vtd
-ggplot(df, aes(x = Vtd,
-               y= Turnout, 
-               fill = Vtd)) + 
+ggplot(df, aes(x = Vtd, y= Turnout, fill = Vtd)) + 
     geom_boxplot() 
 ```
 
 #### Race
 ```{r, fig.align='center', fig.height=2}
 # Party by Race
-PartybyRace <- ggplot(df, 
-       aes(x = Race, 
-           fill = Party)) + 
+PartybyRace <- ggplot(df, aes(x = Race, fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion")
 
 # Turnout by Race
-box_Race <- ggplot(df, aes(x = Race,
-               y= Turnout, 
-               fill = Race)) + 
+box_Race <- ggplot(df, aes(x = Race, y= Turnout, fill = Race)) + 
     geom_boxplot() 
 
 grid.arrange(PartybyRace, box_Race, ncol = 2)
@@ -234,16 +213,12 @@ The median turn out rates do differ a lot by race, which necessitates us to incl
 #### Ethnic
 ```{r, fig.align='center', fig.height=2}
 # Party by Ethnic
-PartybyEthnic <- ggplot(df, 
-       aes(x = Ethnic, 
-           fill = Party)) + 
+PartybyEthnic <- ggplot(df, aes(x = Ethnic, fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion")
 
 # Turnout by Ethnic
-box_Ethnic <- ggplot(df, aes(x = Ethnic,
-               y= Turnout, 
-               fill = Ethnic)) + 
+box_Ethnic <- ggplot(df, aes(x = Ethnic, y= Turnout, fill = Ethnic)) + 
     geom_boxplot() 
 
 grid.arrange(PartybyEthnic, box_Ethnic, ncol = 2)
@@ -253,18 +228,14 @@ The proportion of voting for Democrats is the highest in Hispanic than in other 
 #### Age
 ```{r, fig.align='center', fig.height=2}
 # Party by Age
-PartybyAge <- ggplot(df, 
-       aes(x = Age, 
-           fill = Party)) + 
+PartybyAge <- ggplot(df, aes(x = Age, fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion") + 
   coord_flip()
 
 # Turnout by Age
-box_Age <- ggplot(df, aes(x = Age,
-               y= Turnout, 
-               fill = Age)) + 
-    geom_boxplot() + 
+box_Age <- ggplot(df, aes(x = Age, y= Turnout, fill = Age)) + 
+  geom_boxplot() + 
   coord_flip()
 
 grid.arrange(PartybyAge, box_Age, ncol = 2)
@@ -275,26 +246,22 @@ As people grow older, their turn out rates tend to increase and there is a highe
 ```{r, fig.align='center', fig.height=2}
 # Pie Chart by Party
 Pie_Party <- ggplot(df, aes(x=factor(1), fill=Party))+
-  geom_bar(width = 1)+
-  coord_polar("y")  + 
-  labs(x = NULL, 
-       y = NULL, 
-       fill = NULL, 
-       title = "Pie Chart by Party") + 
+  geom_bar(width = 1) +
+  coord_polar("y") + 
+  labs(x = NULL, y = NULL, fill = NULL, title = "Pie Chart by Party") + 
   theme_classic() + 
   theme(axis.line = element_blank(),
-          axis.text = element_blank(),
-          axis.ticks = element_blank(),
-          plot.title = element_text(hjust = 0.5, color = "#666666"))
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_text(hjust = 0.5, color = "#666666"))
 
 # Turnout by Party
-box_Party <- ggplot(df, aes(x = Party,
-               y= Turnout, 
-               fill = Party)) + 
+box_Party <- ggplot(df, aes(x = Party, y= Turnout, fill = Party)) + 
     geom_boxplot() 
 
 grid.arrange(Pie_Party, box_Party, ncol = 2)
 ```
+
 From the pie chart we can see that the winning party is the Democrats and there is approximately same proportion for the unaffiliated party as the Democrats. The distributions of turn out rates do differ a lot by Party, which justifies a main effect of Party in our model.
 
 ## Model
@@ -307,7 +274,6 @@ p(\beta_0) \sim N(0, ?) \\
 p(\beta) \sim MVN(0, ?) \\
 p(\tau^2)  \sim \text{Inv-gamma}(?, ?)
 $$
-
 
 Your job is to use a Bayesian hierarchical model to answer the following questions of interest.
 
