@@ -264,7 +264,7 @@ grid.arrange(Pie_Party, box_Party, ncol = 2)
 
 From the pie chart we can see that the winning party is the Democrats and there is approximately same proportion for the unaffiliated party as the Democrats. The distributions of turn out rates do differ a lot by Party, which justifies a main effect of Party in our model.
 
-## Model
+## Model - Selection / Specification
 
 $$
 y_{ij} | x_{ij} \sim Bin(n_i, \pi_{ij}) \\
@@ -282,16 +282,16 @@ Did the overall probability or odds of voting differ by county in 2020? Which co
 How did the turnout rates differ between females and males for the different party affiliations?
 How did the turnout rates differ between age groups for the different party affiliations?
 
-#### Model Selection
-
-#### Model Specification
-
 #### Model Diagnostics
+
+Trace plots
 
 ## Results & Findings
 #### Fixed Effects
 
 #### Random Effects
+
+# Research Questions
 
 \newpage
 ## Appendix
