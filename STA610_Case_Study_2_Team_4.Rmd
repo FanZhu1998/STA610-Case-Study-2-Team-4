@@ -17,20 +17,21 @@ knitr::opts_chunk$set(echo = FALSE, cache=TRUE)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
-library(pacman)
-pacman::p_load(tidyverse, lme4, gridExtra, grid, ggplot2, lattice, redres, stringr, influence.ME, knitr, GGally, corrplot, brms, rstan, cowplot, directlabels, tidybayes, parallel)
-# devtools::install_github("goodekat/redres")
+if (!require(pacman)) install.packages("pacman")
+pacman::p_load(tidyverse, lme4, gridExtra, grid, ggplot2, lattice, redres, stringr, influence.ME, knitr, GGally, corrplot, brms, rstan, cowplot, directlabels, tidybayes, parallel, ROCR)
+
 rstan_options(auto_write=TRUE)
 options(mc.cores=parallel::detectCores())
+seed <- 149  # Set seed for reproducibility
 ```
 
 ```{r, warning=FALSE, message=FALSE, error=FALSE}
-VS <- read.delim("voter_stats_20201103.txt", header = TRUE)
-HS <- read.delim("history_stats_20201103.txt", header = TRUE)
+VS <- read.delim("voter_stats_20201103.txt", header = TRUE)  # Registered voters
+HS <- read.delim("history_stats_20201103.txt", header = TRUE)  # Actual voters
 ```
 
 ```{r}
-# aggregate
+# Sum voters across the following relevant categories
 VS_aggregated <- aggregate(VS$total_voters,
                              list(County=VS$county_desc,
                                   Precinct=VS$precinct_abbrv,
@@ -58,7 +59,7 @@ HS_aggregated <- aggregate(HS$total_voters,
 # discard election_date,stats_type, and update_date. 
 county_list <-  unique(HS_aggregated$County)
 
-set.seed(1234)
+set.seed(seed)
 sample_list <- sample(county_list, size=30, replace=FALSE)
 
 VS_sampled <- VS_aggregated %>%
@@ -69,7 +70,7 @@ HS_sampled <- HS_aggregated %>%
 ```
 
 ```{r}
-# merge 
+# Merge voter records with registered records 
 df <-  full_join(VS_sampled, HS_sampled, by = c("County"="County",
                                               "Precinct"="Precinct",
                                               "Vtd"="Vtd",
@@ -80,17 +81,28 @@ df <-  full_join(VS_sampled, HS_sampled, by = c("County"="County",
                                               "Sex"="Sex")) %>%
   rename(total_registered_voter = total_voter.x,
          total_voted_voter = total_voter.y) %>%
-  filter(!is.na(total_registered_voter)) %>%
-  replace(is.na(.), 0) %>%
-  filter(total_voted_voter <= total_registered_voter) %>%
-  mutate(Turnout = total_voted_voter/total_registered_voter) %>%
-  filter(Turnout <= 1) %>%
+  # Some categories had registered voters that didn't vote - replace with 0
+  mutate(total_voted_voter = replace_na(total_voted_voter, 0)) %>%
+  
+  # No reason registered voters should be missing - remove these
+  filter(!is.na(total_registered_voter)) %>% 
+  
+  # Voters should not be greater than the number registered - remove these
+  filter(total_voted_voter <= total_registered_voter) %>% 
   mutate(total_registered_voter = as.numeric(total_registered_voter),
-         total_voted_voter = as.numeric(total_voted_voter))
+         total_voted_voter = as.numeric(total_voted_voter)) %>% 
 
-# sum(is.na(df$total_voted_voter))
-# hist(df$Turnout)
+  # Add in Fan's code for EDA
+  mutate(Turnout = total_voted_voter / total_registered_voter)
 ```
+
+```{r Reduce counties}
+# Way too many observations to run in a reasonable amount of time - reduce each
+# county by half
+set.seed(seed)
+df <- df %>% group_by(County) %>% sample_frac(0.5, replace = FALSE)
+```
+
 ## Introduction
 The United States have record-high turnout rates in 2020 over a century. So in this case study, we have built a Bayesian hierarchical model for the 2020 Presidential Election to investigate how different demographic variables lead to different turnout rates and the evidence of heterogeneity across counties. Our data sets come from the North Carolina State Board of Elections (NCSBE), which provides data on both the aggregate counts of registered voters and voters who actually voted by the demographic variables. 
 
@@ -103,23 +115,17 @@ To reduce the computational complexity and get better estimates, we randomly sam
 #### County
 ```{r, fig.align='center', fig.height=3.6}
 # Party by County
-PartybyCounty <- ggplot(df, 
-       aes(x = County, 
-           fill = Party)) + 
+PartybyCounty <- ggplot(df, aes(x = County, fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion") + 
   coord_flip()
 # PartybyCounty
 
 # Turnout by County
-box_County <- ggplot(df, aes(x = County,
-               y= Turnout, 
-               fill = County)) + 
-    geom_boxplot() + 
-  coord_flip() + 
-  theme(legend.position = "none")
+box_County <- ggplot(df, aes(x = County, y= Turnout, fill = County)) + 
+  geom_boxplot() + 
+  coord_flip()
 box_County
-
 ```
 From the boxplot we can see that the median turnout rates do differ by county, which justifies the random intercepts by county in our model.
 
@@ -127,33 +133,25 @@ From the boxplot we can see that the median turnout rates do differ by county, w
 ```{r, include = FALSE}
 #### Preccint
 # Party by Preccint
-ggplot(df, 
-       aes(x = Precinct, 
-           fill = Party)) + 
+ggplot(df, aes(x = Precinct, fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion") + 
   coord_flip()
 
 # Turnout by Precinct
-ggplot(df, aes(x = Precinct,
-               y= Turnout, 
-               fill = Precinct)) + 
+ggplot(df, aes(x = Precinct, y= Turnout, fill = Precinct)) + 
     geom_boxplot() 
 ```
 
 #### Sex
 ```{r, fig.align='center', fig.height=2}
 # Party by Sex
-PartybySex <- ggplot(df, 
-       aes(x = Sex, 
-           fill = Party)) + 
+PartybySex <- ggplot(df, aes(x = Sex, fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion")
 
 # Turnout by Sex
-box_Sex <- ggplot(df, aes(x = Sex,
-               y= Turnout, 
-               fill = Sex)) + 
+box_Sex <- ggplot(df, aes(x = Sex, y= Turnout, fill = Sex)) + 
     geom_boxplot() 
 
 grid.arrange(PartybySex, box_Sex, ncol = 2)
@@ -163,32 +161,24 @@ From the boxplot we can see that the median turn out rate in male is the lowest 
 ```{r, include = FALSE}
 #### Voter tabulation district 
 # Party by Voter tabulation district 
-ggplot(df, 
-       aes(x = Vtd, 
-           fill = Party)) + 
+ggplot(df, aes(x = Vtd, fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion")
 
 # Turnout by Vtd
-ggplot(df, aes(x = Vtd,
-               y= Turnout, 
-               fill = Vtd)) + 
+ggplot(df, aes(x = Vtd, y= Turnout, fill = Vtd)) + 
     geom_boxplot() 
 ```
 
 #### Race
 ```{r, fig.align='center', fig.height=2}
 # Party by Race
-PartybyRace <- ggplot(df, 
-       aes(x = Race, 
-           fill = Party)) + 
+PartybyRace <- ggplot(df, aes(x = Race, fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion")
 
 # Turnout by Race
-box_Race <- ggplot(df, aes(x = Race,
-               y= Turnout, 
-               fill = Race)) + 
+box_Race <- ggplot(df, aes(x = Race, y= Turnout, fill = Race)) + 
     geom_boxplot() 
 
 grid.arrange(PartybyRace, box_Race, ncol = 2)
@@ -199,16 +189,12 @@ The median turn out rates do differ a lot by race, which necessitates us to incl
 #### Ethnic
 ```{r, fig.align='center', fig.height=2}
 # Party by Ethnic
-PartybyEthnic <- ggplot(df, 
-       aes(x = Ethnic, 
-           fill = Party)) + 
+PartybyEthnic <- ggplot(df, aes(x = Ethnic, fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion")
 
 # Turnout by Ethnic
-box_Ethnic <- ggplot(df, aes(x = Ethnic,
-               y= Turnout, 
-               fill = Ethnic)) + 
+box_Ethnic <- ggplot(df, aes(x = Ethnic, y= Turnout, fill = Ethnic)) + 
     geom_boxplot() 
 
 grid.arrange(PartybyEthnic, box_Ethnic, ncol = 2)
@@ -218,18 +204,14 @@ The proportion of voting for Democrats is the highest in Hispanic than in other 
 #### Age
 ```{r, fig.align='center', fig.height=2}
 # Party by Age
-PartybyAge <- ggplot(df, 
-       aes(x = Age, 
-           fill = Party)) + 
+PartybyAge <- ggplot(df, aes(x = Age, fill = Party)) + 
   geom_bar(position = "fill") +
   labs(y = "Proportion") + 
   coord_flip()
 
 # Turnout by Age
-box_Age <- ggplot(df, aes(x = Age,
-               y= Turnout, 
-               fill = Age)) + 
-    geom_boxplot() + 
+box_Age <- ggplot(df, aes(x = Age, y= Turnout, fill = Age)) + 
+  geom_boxplot() + 
   coord_flip()
 
 grid.arrange(PartybyAge, box_Age, ncol = 2)
@@ -240,29 +222,32 @@ As people grow older, their turn out rates tend to increase and there is a highe
 ```{r, fig.align='center', fig.height=2}
 # Pie Chart by Party
 Pie_Party <- ggplot(df, aes(x=factor(1), fill=Party))+
-  geom_bar(width = 1)+
-  coord_polar("y")  + 
-  labs(x = NULL, 
-       y = NULL, 
-       fill = NULL, 
-       title = "Pie Chart by Party") + 
+  geom_bar(width = 1) +
+  coord_polar("y") + 
+  labs(x = NULL, y = NULL, fill = NULL, title = "Pie Chart by Party") + 
   theme_classic() + 
   theme(axis.line = element_blank(),
-          axis.text = element_blank(),
-          axis.ticks = element_blank(),
-          plot.title = element_text(hjust = 0.5, color = "#666666"))
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_text(hjust = 0.5, color = "#666666"))
 
 # Turnout by Party
-box_Party <- ggplot(df, aes(x = Party,
-               y= Turnout, 
-               fill = Party)) + 
+box_Party <- ggplot(df, aes(x = Party, y= Turnout, fill = Party)) + 
     geom_boxplot() 
 
 grid.arrange(Pie_Party, box_Party, ncol = 2)
 ```
+
 From the pie chart we can see that the winning party is the Democrats and there is approximately same proportion for the unaffiliated party as the Democrats. The distributions of turn out rates do differ a lot by Party, which justifies a main effect of Party in our model.
 
-## Model
+## Model - Selection / Specification
+
+Your job is to use a Bayesian hierarchical model to answer the following questions of interest.
+
+1. How did different demographic subgroups vote in the 2020 general elections? For example, how did the turnout for males compare to the turnout for females after controlling for other potential predictors?
+2. Did the overall probability or odds of voting differ by county in 2020? Which counties differ the most from other counties?
+3. How did the turnout rates differ between females and males for the different party affiliations?
+4. How did the turnout rates differ between age groups for the different party affiliations?
 
 $$
 y_{ij} | x_{ij} \sim Bin(n_i, \pi_{ij}) \\
@@ -274,23 +259,81 @@ p(\tau^2)  \sim \text{Inv-gamma}(?, ?)
 $$
 
 
-Your job is to use a Bayesian hierarchical model to answer the following questions of interest.
-
-How did different demographic subgroups vote in the 2020 general elections? For example, how did the turnout for males compare to the turnout for females after controlling for other potential predictors?
-Did the overall probability or odds of voting differ by county in 2020? Which counties differ the most from other counties?
-How did the turnout rates differ between females and males for the different party affiliations?
-How did the turnout rates differ between age groups for the different party affiliations?
-
-#### Model Selection
-
-
-
-
-#### Model Specification
+```{r Model}
+formula <- 'total_voted_voter | trials(total_registered_voter) ~
+            1 + Age*Party + Sex*Party + Race + Ethnic + (1 | County)'
+start_time <- Sys.time()
+default_model <- brm(formula=formula, data = df2, family = binomial,
+                     prior = c(
+                       set_prior('normal(0, 10)', class = 'Intercept'),
+                       set_prior('normal(0, 10)', class = 'b'),
+                       set_prior('student_t(3, 0, 1)', class='sd')
+                     ),
+                     iter=100, seed=seed,
+                     file = 'default_model',
+                     cores=detectCores(),
+                     chains=2)
+end_time <- Sys.time()
+```
 
 #### Model Diagnostics
 
+To assess whether or not the Markov chain has achieved stationarity, we can investigate trace plots. There are too many parameters to paste *all* of the trace plots, so we will only investigate a subset of the reference intercept, a fixed effect, an interaction term, and a random effect
+
+```{r}
+vars <- c('b_Intercept', 'b_AgeAge26M40', 'b_PartyDEM', 'b_SexM', 'b_RaceA', 'b_EthnicNL', 'b_AgeAge26M40:PartyDEM', 'b_PartyGRE:SexM', 'r_County[ASHE,Intercept]')
+plot(default_model, pars=vars, fixed=TRUE, ask=FALSE)
+```
+
+We can also investigate the ROC curve to assess whether or not the model is performing reasonably from a predictive modeling standpoint:
+
+```{r}
+fitted_resp <- fitted(default_model)
+# Convert from expected counts to probability of success
+est_prob <- fitted_resp[, 'Estimate'] / df$total_registered_voter
+```
+
+```{r}
+# Create individual 0's and 1's for each group based off of registered and actual voters
+ground_truth_counts <- df$total_voted_voter
+ground_truth <- sapply(1:nrow(df), function(i) {
+  voters <- rep(1, ground_truth_counts[i])
+  non_voters <- rep(0, df[i, 'total_registered_voter'] - ground_truth_counts[i])
+  ind_counts <- c(voters, non_voters)
+})
+ground_truth <- unlist(ground_truth)
+
+# Repeat the predicted group value for every registered voter in the group
+predictions <- rep(est_prob, df$total_registered_voter)
+pred <- ROCR::prediction(predictions, ground_truth)
+
+perf <- performance(pred, "tpr", "fpr")
+auc_ROCR <- performance(pred, measure = "auc")
+auc_ROCR <- auc_ROCR@y.values[[1]]
+
+# Plot ROC curve
+plot(perf, avg= "threshold", lwd=3, main='ROC Curve for Predicted Voting')
+abline(coef = c(0,1))
+legend('bottomright', legend=paste('AUROC:', auc_ROCR %>% round(3)), col=c('black'), lty=1)
+```
+
 ## Results & Findings
+
+Here are the results of our inference. Fixed effects are given by the `b_` prefix, while random effects are given by the `r_` prefix. Finally, an estimate for the between-county variance can be found under `sd_County__Intercept`.
+
+```{r Coefficient Table}
+default_model %>% posterior_summary() %>% kable(digits = 3, align = 'c')
+```
+
+
 #### Fixed Effects
 
 #### Random Effects
+
+# Research Questions
+
+\newpage
+## Appendix
+
+```{r, ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```
