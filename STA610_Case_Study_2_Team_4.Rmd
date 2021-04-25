@@ -13,12 +13,12 @@ geometry: margin=2cm
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, cache=TRUE)
+knitr::opts_chunk$set(echo = FALSE, cache=TRUE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 4)
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, cache=FALSE}
 if (!require(pacman)) install.packages("pacman")
-pacman::p_load(tidyverse, lme4, gridExtra, grid, ggplot2, lattice, redres, stringr, influence.ME, knitr, GGally, corrplot, brms, rstan, cowplot, directlabels, tidybayes, parallel, ROCR)
+pacman::p_load(tidyverse, lme4, gridExtra, grid, ggplot2, lattice, redres, stringr, influence.ME, knitr, GGally, corrplot, brms, rstan, cowplot, directlabels, tidybayes, parallel, ROCR, bayesplot)
 
 rstan_options(auto_write=TRUE)
 options(mc.cores=parallel::detectCores())
@@ -255,9 +255,7 @@ Finally, we are asked to prepare a Bayesian hierarchical model - this is why we 
   logit(\pi_{ij}) = \beta_0 + \beta_{1a} I(S_i = a) + \beta_{2b} I(A_i = b) + \beta_{3c} I(P_i = c) + \beta_{4d} I(E_i = d) + \beta_{5e} I(R_i = e) + \\
   \beta_{6bc} I( A_i = b, P_i = c) + \beta_{7ab} I(S_i = a, A_i = b) + b_{0j} \\
   b_{0j} \sim N(0, \tau^2) \\
-  p(\beta_0) \sim N(0, 10) \\
-  p(\beta) \sim MVN(0, 10 * I_{n\beta}) \\
-  p(\tau^2)  \sim \text{Student-t}(\nu=3, \mu=0, \sigma=1)
+  \beta_0 \sim N(0, 10), \beta \sim MVN(0, 10 * I_{n\beta}), \tau^2 \sim \text{Student-t}(\nu=3, \mu=0, \sigma=1)
 \end{gather*}
 
 Where $S_i, A_i, P_i, E_i, R_i$ denote the sex, age range, party affiliation, ethnicity, and race of the group respectively, and where $j$ indexes 1 of 30 counties.
@@ -290,9 +288,11 @@ For the prior on between-group variance $\tau^2$, a student-t distribution is us
 
 To assess whether or not the Markov chain has achieved stationarity, we can investigate trace plots. There are too many parameters to paste *all* of the trace plots, so we will only investigate a subset of the reference intercept, a fixed effect, an interaction term, and a random effect
 
-```{r}
-vars <- c('b_Intercept', 'b_AgeAge26M40', 'b_PartyDEM', 'b_SexM', 'b_RaceA', 'b_EthnicNL', 'b_AgeAge26M40:PartyDEM', 'b_PartyGRE:SexM', 'r_County[ASHE,Intercept]')
-plot(default_model, pars=vars, fixed=TRUE, ask=FALSE)
+```{r cache=FALSE, fig.height=1}
+#vars <- c('b_Intercept', 'b_AgeAge26M40', 'b_PartyDEM', 'b_SexM', 'b_RaceA', 'b_EthnicNL', #'b_AgeAge26M40:PartyDEM', 'b_PartyGRE:SexM', 'r_County[ASHE,Intercept]')
+vars <- c('b_Intercept', 'b_PartyDEM', 'b_PartyGRE:SexM')
+#plot(default_model, pars=vars, fixed=TRUE, ask=FALSE)
+mcmc_plot(default_model, pars=vars, fixed=TRUE, type='trace', ask=FALSE)
 ```
 
 We can also investigate the ROC curve to assess whether or not the model is performing reasonably from a predictive modeling standpoint:
@@ -333,7 +333,10 @@ Here are the results of our inference. Fixed effects are given by the `b_` prefi
 
 ```{r Coefficient Table}
 post_summary <- default_model %>% posterior_summary() %>% as_tibble(rownames = 'Effect')
-post_summary %>% kable(digits = 3, align = 'c')
+post_summary_fixed <- post_summary %>% filter(!startsWith(Effect, 'r_'))
+#post_summary_random <- post_summary %>% filter(startsWith(Effect, 'r_'))
+#post_summary %>% kable(digits = 3, align = 'c')
+kable(post_summary_fixed, digits = 3, align = 'c')
 ```
 
 Coefficients are given on the *log-odds* scale of probability. Thus, we would interpret a fixed effect as the expected change in the log-odds of voting compared to the reference group, holding all else constant. We can exponentiate this coefficient to obtain the regular change in odds, or we can apply the inverse link function (sigmoid) to recover the expected change in probability.
