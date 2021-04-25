@@ -316,11 +316,13 @@ legend('bottomright', legend=paste('AUROC:', auc_ROCR %>% round(3)), col=c('blac
 Here are the results of our inference. Fixed effects are given by the `b_` prefix, while random effects are given by the `r_` prefix. Finally, an estimate for the between-county variance can be found under `sd_County__Intercept`.
 
 ```{r Coefficient Table}
-post_summary <- default_model %>% posterior_summary()
+post_summary <- default_model %>% posterior_summary() %>% as_tibble(rownames = 'Effect')
 post_summary %>% kable(digits = 3, align = 'c')
 ```
 
 Coefficients are given on the *log-odds* scale of probability. Thus, we would interpret a fixed effect as the expected change in the log-odds of voting compared to the reference group, holding all else constant. We can exponentiate this coefficient to obtain the regular change in odds, or we can apply the inverse link function (sigmoid) to recover the expected change in probability.
+
+A coefficient with no effect (estimate of 0 on log-odds) will have an inverse logit of 0.5. Negative and positive effects will produce inverse logit results of less than 0.5 and greater than 0.5 respectively. The difference from 0.5 can interpreted as the expected decrease / increase in the probability of voting from the baseline.
 
 #### Fixed Effects
 
@@ -330,19 +332,111 @@ Coefficients are given on the *log-odds* scale of probability. Thus, we would in
 
 **1. How did different demographic subgroups vote in the 2020 general elections? For example, how did the turnout for males compare to the turnout for females after controlling for other potential predictors?**
 
-Interpreting race
+To interpret the coefficients as "turnout", we need to pass them through the `inv_logit_scaled` function
 
-Interpreting ethnicity
+### Race
 
-Note: Effect for race is **not significant**. Ethnicity **does** appear to be significant
+*Note:* For the race variable, a blank value that we missed appears to be the baseline level. This will make interpretation of race difficult
 
-It is easy to see the effect of race/ethnicity. The default level for race is ... and the default level for ethnicity is ... Because 
+The expected difference in turnout between a voter with the following race compared to a baseline race voter (holding all else constant) is given in the following table:
 
-Interpreting age (be aware of interaction - we cannot say "holding all else constant" because the age effect has an interaction that *depends* on party)
+```{r Race}
+races <- post_summary %>% filter(startsWith(Effect, 'b_Race')) %>% pull(Effect)
+post_summary %>% 
+  filter(Effect %in% races) %>% 
+  select(-c('Effect')) %>% 
+  inv_logit_scaled() %>% 
+  mutate('Race' = races, .before = 'Estimate') %>% 
+  kable(digits=3)
+```
 
-Interpreting sex (be aware of interaction - we cannot say "holding all else constant" because the age effect has an interaction that *depends* on party)
+Again, interpretation for this variable is difficult due to the erroneous baseline - but an example interpretation is given as follows for reference. An Asian voter has an expected increase in probability of voting of $0.932 - 0.5 = 0.432$ compared to this baseline level, holding all else constant. We observe that all of race effects contain credible intervals of 0, and as such we cannot conclude that race has an impact on voting.
 
-Interpreting party (be aware of interaction - we cannot say "holding all else constant" because the age effect has an interaction that *depends* on age/sex)
+### Ethnicity
+
+```{r Ethnicity}
+ethnicities <- post_summary %>% filter(startsWith(Effect, 'b_Ethnic')) %>% pull(Effect)
+post_summary %>% 
+  filter(Effect %in% ethnicities) %>% 
+  select(-c('Effect')) %>% 
+  inv_logit_scaled() %>% 
+  mutate('Effect' = ethnicities, .before = 'Estimate') %>% 
+  kable(digits = 3)
+```
+
+Holding all else constant:
+
+- A non Hispanic/Latino voter has an expected increase in probability of voting of $0.086$
+- An undesignated voter has an expected increase in probability of voting of $0.072$
+
+compared to the baseline ethnicity (Hispanic / Latino). Both effects appear to be significant, as the coefficient on the log-odds scale does not include 0.
+
+### Age
+
+The remaining effects are slightly trickier to interpret due to the interaction effects. We will explore this more in question 4. For age, we may interpret this effect as the expected change in log odds compared to the baseline age *if* we are working within the baseline party (Constitution Party or CST). Effects given below with interpretation:
+
+```{r}
+ages <- c('b_AgeAge26M40', 'b_AgeAge41M65', 'b_AgeAgeOver66')
+post_summary %>% 
+  filter(Effect %in% ages) %>%
+  select(-c('Effect')) %>% 
+  inv_logit_scaled() %>% 
+  mutate('Effect' = ages, .before = 'Estimate') %>% 
+  kable(digits = 3)
+```
+
+Holding all else constant:
+
+- An 26-40 year old CST voter has an expected increase in probability of voting of 0.239
+- A 41-65 year old CST voter has an expected increase in probability of voting of 0.259
+- A 66+ year old CST voter has an expected increase in probability of voting of 0.339 
+
+Compared to an 18-25 year CST voter. All age effects are significant, and we observe an increase of voter turnout with age (again, for CST party only).
+
+### Sex
+
+As before, to interpret the marginal effect of the Sex coefficient, we will need to assume 2 voters in the baseline party such that the interaction term does not get introduced. Effects given below with interpretation:
+
+```{r}
+sexes <- c('b_SexM', 'b_SexU')
+post_summary %>% 
+  filter(Effect %in% sexes) %>%
+  select(-c('Effect')) %>% 
+  inv_logit_scaled() %>% 
+  mutate('Effect' = sex, .before = 'Estimate') %>% 
+  kable(digits=3)
+```
+
+Holding all else constant:
+
+- An male voter in the CST party has an expected increase in the probability of voting of 0.053
+- An undesignated gender in the CST party has an expected increase in the probability of voting of 0.102
+
+Compared to an female CST voter. However, neither effect is significant (containing 0 on the log-odds scale), and so we fail to reject the hypothesis that gender is significantly associated with voting turnout (for the CST party).
+
+### Party
+
+Finally, party follows the same workflow as before - to obtain the marginal interpretation of the party coefficient, we must assume baseline levels of the terms involved in the party interactions (female voters and 18-25). Effects given below with interpretation:
+
+```{r}
+parties <- c('b_PartyDEM', 'b_PartyGRE', 'b_PartyLIB', 'b_PartyREP', 'b_PartyUNA')
+post_summary %>% 
+  filter(Effect %in% parties) %>%
+  select(-c('Effect')) %>% 
+  inv_logit_scaled() %>% 
+  mutate('Effect' = parties, .before = 'Estimate') %>% 
+  kable(digits=3)
+```
+
+Holding all else constant,
+
+- 18-25 year old female Democrat voters have an expected increase in the probability of voting of 0.253
+- 18-25 year old female GRE voters have an expected increase in the probability of voting of 0.087
+- 18-25 year old female Libertarian voters have an expected increase in the probability of voting of 0.127
+- 18-25 year old female Democrat voters have an expected increase in the probability of voting of 0.293
+- 18-25 year old unaffiliated female voters have an expected increase in the probability of voting of 0.163
+
+Compared to 18-25 year old female CST voters. This effect only appears to be significant for Democrat and Republican voters however.
 
 **2. Did the overall probability or odds of voting differ by county in 2020? Which counties differ the most from other counties?**
 
