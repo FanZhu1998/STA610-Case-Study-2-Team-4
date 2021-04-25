@@ -89,7 +89,11 @@ df <-  full_join(VS_sampled, HS_sampled, by = c("County"="County",
   # Voters should not be greater than the number registered - remove these
   filter(total_voted_voter <= total_registered_voter) %>% 
   mutate(total_registered_voter = as.numeric(total_registered_voter),
-         total_voted_voter = as.numeric(total_voted_voter))
+         total_voted_voter = as.numeric(total_voted_voter)) %>% 
+
+  # Add in Fan's code for EDA
+  mutate(Turnout = total_voted_voter / total_registered_voter) %>%
+  filter(Turnout <= 1) %>%
 ```
 
 ```{r Reduce counties}
@@ -277,6 +281,38 @@ To assess whether or not the Markov chain has achieved stationarity, we can inve
 ```{r}
 vars <- c('b_Intercept', 'b_AgeAge26M40', 'b_PartyDEM', 'b_SexM', 'b_RaceA', 'b_EthnicNL', 'b_AgeAge26M40:PartyDEM', 'b_PartyGRE:SexM', 'r_County[ASHE,Intercept]')
 plot(default_model, pars=vars, fixed=TRUE, ask=FALSE)
+```
+
+We can also investigate the ROC curve to assess whether or not the model is performing reasonably from a predictive modeling standpoint:
+
+```{r}
+fitted_resp <- fitted(default_model)
+# Convert from expected counts to probability of success
+est_prob <- fitted_resp[, 'Estimate'] / df$total_registered_voter
+```
+
+```{r}
+# Create individual 0's and 1's for each group based off of registered and actual voters
+ground_truth_counts <- df$total_voted_voter
+ground_truth <- sapply(1:nrow(df), function(i) {
+  voters <- rep(1, ground_truth_counts[i])
+  non_voters <- rep(0, df[i, 'total_registered_voter'] - ground_truth_counts[i])
+  ind_counts <- c(voters, non_voters)
+})
+ground_truth <- unlist(ground_truth)
+
+# Repeat the predicted group value for every registered voter in the group
+predictions <- rep(est_prob, df$total_registered_voter)
+pred <- ROCR::prediction(predictions, ground_truth)
+
+perf <- performance(pred, "tpr", "fpr")
+auc_ROCR <- performance(pred, measure = "auc")
+auc_ROCR <- auc_ROCR@y.values[[1]]
+
+# Plot ROC curve
+plot(perf, avg= "threshold", lwd=3, main='ROC Curve for Predicted Voting')
+abline(coef = c(0,1))
+legend('bottomright', legend=paste('AUROC:', auc_ROCR %>% round(3)), col=c('black'), lty=1)
 ```
 
 ## Results & Findings
