@@ -93,8 +93,7 @@ df <-  full_join(VS_sampled, HS_sampled, by = c("County"="County",
          total_voted_voter = as.numeric(total_voted_voter)) %>% 
 
   # Add in Fan's code for EDA
-  mutate(Turnout = total_voted_voter / total_registered_voter) %>%
-  filter(Turnout <= 1) %>%
+  mutate(Turnout = total_voted_voter / total_registered_voter)
 ```
 
 ```{r Reduce counties}
