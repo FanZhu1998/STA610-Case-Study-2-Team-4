@@ -19,9 +19,10 @@ knitr::opts_chunk$set(echo = FALSE, cache=TRUE)
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 if (!require(pacman)) install.packages("pacman")
 pacman::p_load(tidyverse, lme4, gridExtra, grid, ggplot2, lattice, redres, stringr, influence.ME, knitr, GGally, corrplot, brms, rstan, cowplot, directlabels, tidybayes, parallel, ROCR)
-# devtools::install_github("goodekat/redres")
+
 rstan_options(auto_write=TRUE)
 options(mc.cores=parallel::detectCores())
+seed <- 149  # Set seed for reproducibility
 ```
 
 ```{r, warning=FALSE, message=FALSE, error=FALSE}
@@ -58,7 +59,7 @@ HS_aggregated <- aggregate(HS$total_voters,
 # discard election_date,stats_type, and update_date. 
 county_list <-  unique(HS_aggregated$County)
 
-set.seed(149)
+set.seed(seed)
 sample_list <- sample(county_list, size=30, replace=FALSE)
 
 VS_sampled <- VS_aggregated %>%
@@ -99,7 +100,7 @@ df <-  full_join(VS_sampled, HS_sampled, by = c("County"="County",
 ```{r Reduce counties}
 # Way too many observations to run in a reasonable amount of time - reduce each
 # county by half
-set.seed(1234)
+set.seed(seed)
 df <- df %>% group_by(County) %>% sample_frac(0.5, replace = FALSE)
 ```
 
@@ -267,7 +268,7 @@ default_model <- brm(formula=formula, data = df2, family = binomial,
                        set_prior('normal(0, 10)', class = 'b'),
                        set_prior('student_t(3, 0, 1)', class='sd')
                      ),
-                     iter=100, seed=42,
+                     iter=100, seed=seed,
                      file = 'default_model',
                      cores=detectCores(),
                      chains=2)
