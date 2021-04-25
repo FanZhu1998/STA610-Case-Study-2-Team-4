@@ -251,11 +251,11 @@ Your job is to use a Bayesian hierarchical model to answer the following questio
 
 $$
 y_{ij} | x_{ij} \sim Bin(n_i, \pi_{ij}) \\
-logit(\pi_{ij}) = \beta_0 + \beta s_i + \beta A_i + \beta P_i + \beta (A_i * P_i) + \beta (A_i * S_i) + b_{0j} \\
+logit(\pi_{ij}) = \beta_0 + \beta_{1a} I(S_i = a) + \beta_{2b} I(A_i = b) + \beta_{3c} I(P_i = c) + \beta_{4bc} I( A_i = b, P_i = c) + \beta_{5ab} (S_i = a, A_i = b) + b_{0j} \\
 b_{0j} \sim N(0, \tau^2) \\
-p(\beta_0) \sim N(0, ?) \\
-p(\beta) \sim MVN(0, ?) \\
-p(\tau^2)  \sim \text{Inv-gamma}(?, ?)
+p(\beta_0) \sim N(0, 10) \\
+p(\beta) \sim MVN(0, 10 * I_{n\beta}) \\
+p(\tau^2)  \sim \text{Student-t}(\nu=3, \mu=0, \sigma=1)
 $$
 
 
