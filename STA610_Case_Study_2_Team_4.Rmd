@@ -108,10 +108,12 @@ The United States have record-high turnout rates in 2020 over a century. So in t
 
 Our question of interests is the turn out rate, which is calculated as dividing the total counts of voters who actually voted by the total counts of voters who registered, aggregating all other demographic variables. The potential predictors include the the county, voter tabulation district, age, sex, race, ethnicity and party of the voters. There variables present a natural grouping structure for the turnout rate. Therefore, a Bayesian hierarchical model in this case has the advantages of "borrowing information" from the data set as a whole to stabilize estimates of the turnout rate in groups with relatively small sample size as well as fitting a large amount of random variance in a complex model. 
 
+To reduce the computational complexity and get better estimates, we randomly sampled 30 counties from our datasets. We also cleaned the datasets by removing those observations with 'NA's in their total counts of registered voters as well as the cases where the total counts of voters who actually voted exeeded the total counts of registered voters. Those abnormalies are most likely due to measurement errors. 
+
 
 ## EDA
 #### County
-```{r, fig.align='center', fig.height=4}
+```{r, fig.align='center', fig.height=3.6}
 # Party by County
 PartybyCounty <- ggplot(df, aes(x = County, fill = Party)) + 
   geom_bar(position = "fill") +
