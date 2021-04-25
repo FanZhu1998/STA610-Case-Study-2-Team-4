@@ -272,9 +272,22 @@ end_time <- Sys.time()
 
 #### Model Diagnostics
 
-Trace plots
+To assess whether or not the Markov chain has achieved stationarity, we can investigate trace plots. There are too many parameters to paste *all* of the trace plots, so we will only investigate a subset of the reference intercept, a fixed effect, an interaction term, and a random effect
+
+```{r}
+vars <- c('b_Intercept', 'b_AgeAge26M40', 'b_PartyDEM', 'b_SexM', 'b_RaceA', 'b_EthnicNL', 'b_AgeAge26M40:PartyDEM', 'b_PartyGRE:SexM', 'r_County[ASHE,Intercept]')
+plot(default_model, pars=vars, fixed=TRUE, ask=FALSE)
+```
 
 ## Results & Findings
+
+Here are the results of our inference. Fixed effects are given by the `b_` prefix, while random effects are given by the `r_` prefix. Finally, an estimate for the between-county variance can be found under `sd_County__Intercept`.
+
+```{r Coefficient Table}
+default_model %>% posterior_summary() %>% kable(digits = 3, align = 'c')
+```
+
+
 #### Fixed Effects
 
 #### Random Effects
