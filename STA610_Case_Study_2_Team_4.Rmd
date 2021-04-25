@@ -263,16 +263,17 @@ $$
 formula <- 'total_voted_voter | trials(total_registered_voter) ~
             1 + Age*Party + Sex*Party + Race + Ethnic + (1 | County)'
 start_time <- Sys.time()
-default_model <- brm(formula=formula, data = df2, family = binomial,
+default_model <- brm(formula=formula, data = df, family = binomial,
                      prior = c(
                        set_prior('normal(0, 10)', class = 'Intercept'),
                        set_prior('normal(0, 10)', class = 'b'),
                        set_prior('student_t(3, 0, 1)', class='sd')
                      ),
-                     iter=100, seed=seed,
-                     file = 'default_model',
+                     iter=2000, seed=seed,
+                     file = 'final_model',
                      cores=detectCores(),
-                     chains=2)
+                     chains=2,
+                     silent=0)
 end_time <- Sys.time()
 ```
 
