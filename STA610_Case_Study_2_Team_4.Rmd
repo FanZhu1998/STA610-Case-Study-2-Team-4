@@ -262,7 +262,6 @@ Finally, we are asked to prepare a Bayesian hierarchical model - this is why we 
 
 Where $S_i, A_i, P_i, E_i, R_i$ denote the sex, age range, party affiliation, ethnicity, and race of the group respectively, and where $j$ indexes 1 of 30 counties.
 
-
 ```{r Model}
 formula <- 'total_voted_voter | trials(total_registered_voter) ~
             1 + Age*Party + Sex*Party + Race + Ethnic + (1 | County)'
@@ -280,6 +279,12 @@ default_model <- brm(formula=formula, data = df, family = binomial,
                      silent=0)
 end_time <- Sys.time()
 ```
+
+#### Prior Specification
+
+As we don't have any particular domain knowledge, priors are chose to be uninformative. We choose flat priors for the fixed effects (intercept included) centered around 0 (no effect) with a relatively large variance.
+
+For the prior on between-group variance $\tau^2$, a student-t distribution is used. This is the result of a recommendation by Gelman for a half-t prior, which under certain assumptions leads us to this Student-t centered around 0.
 
 #### Model Diagnostics
 
@@ -334,10 +339,6 @@ post_summary %>% kable(digits = 3, align = 'c')
 Coefficients are given on the *log-odds* scale of probability. Thus, we would interpret a fixed effect as the expected change in the log-odds of voting compared to the reference group, holding all else constant. We can exponentiate this coefficient to obtain the regular change in odds, or we can apply the inverse link function (sigmoid) to recover the expected change in probability.
 
 A coefficient with no effect (estimate of 0 on log-odds) will have an inverse logit of 0.5. Negative and positive effects will produce inverse logit results of less than 0.5 and greater than 0.5 respectively. The difference from 0.5 can interpreted as the expected decrease / increase in the probability of voting from the baseline.
-
-#### Fixed Effects
-
-#### Random Effects
 
 # Research Questions
 
