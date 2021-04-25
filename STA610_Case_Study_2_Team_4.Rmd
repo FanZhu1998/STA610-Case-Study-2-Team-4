@@ -92,41 +92,11 @@ df <-  full_join(VS_sampled, HS_sampled, by = c("County"="County",
          total_voted_voter = as.numeric(total_voted_voter))
 ```
 
-```{r}
-calculate_nrows <- function(seed) {
-  set.seed(seed)
-  sample_list <- sample(county_list, size=30, replace=FALSE)
-  
-  VS_sampled <- VS_aggregated %>%
-    filter(County %in% sample_list)
-  
-  HS_sampled <- HS_aggregated %>%
-    filter(County %in% sample_list)
-  
-  df <-  full_join(VS_sampled, HS_sampled, by = c("County"="County",
-                                              "Precinct"="Precinct",
-                                              "Vtd"="Vtd",
-                                              "Age"="Age",
-                                              "Party"="Party",
-                                              "Race"="Race",
-                                              "Ethnic"="Ethnic",
-                                              "Sex"="Sex")) %>%
-  rename(total_registered_voter = total_voter.x,
-         total_voted_voter = total_voter.y) %>%
-  # Some categories had registered voters that didn't vote - replace with 0
-  mutate(total_voted_voter = replace_na(total_voted_voter, 0)) %>%
-  
-  # No reason registered voters should be missing - remove these
-  filter(!is.na(total_registered_voter)) %>% 
-  
-  # Voters should not be greater than the number registered - remove these
-  filter(total_voted_voter <= total_registered_voter) %>% 
-  mutate(total_registered_voter = as.numeric(total_registered_voter),
-         total_voted_voter = as.numeric(total_voted_voter))
-  return(nrow(df))
-}
-
-rows <- sapply(100:150, calculate_nrows)
+```{r Reduce counties}
+# Way too many observations to run in a reasonable amount of time - reduce each
+# county by half
+set.seed(1234)
+df <- df %>% group_by(County) %>% sample_frac(0.5, replace = FALSE)
 ```
 
 ## Introduction
@@ -282,18 +252,22 @@ p(\beta) \sim MVN(0, ?) \\
 p(\tau^2)  \sim \text{Inv-gamma}(?, ?)
 $$
 
+
 ```{r Model}
 formula <- 'total_voted_voter | trials(total_registered_voter) ~
             1 + Age*Party + Sex*Party + Race + Ethnic + (1 | County)'
-default_model <- brm(data = df, family = binomial,
+start_time <- Sys.time()
+default_model <- brm(formula=formula, data = df2, family = binomial,
                      prior = c(
                        set_prior('normal(0, 10)', class = 'Intercept'),
                        set_prior('normal(0, 10)', class = 'b'),
                        set_prior('student_t(3, 0, 1)', class='sd')
                      ),
-                     iter=10,
+                     iter=100, seed=42,
+                     file = 'default_model',
                      cores=detectCores(),
-                     seed=42)
+                     chains=2)
+end_time <- Sys.time()
 ```
 
 #### Model Diagnostics
