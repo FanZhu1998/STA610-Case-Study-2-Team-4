@@ -242,13 +242,6 @@ From the pie chart we can see that the winning party is the Democrats and there 
 
 ## Model - Selection / Specification
 
-Your job is to use a Bayesian hierarchical model to answer the following questions of interest.
-
-1. How did different demographic subgroups vote in the 2020 general elections? For example, how did the turnout for males compare to the turnout for females after controlling for other potential predictors?
-2. Did the overall probability or odds of voting differ by county in 2020? Which counties differ the most from other counties?
-3. How did the turnout rates differ between females and males for the different party affiliations?
-4. How did the turnout rates differ between age groups for the different party affiliations?
-
 $$
 y_{ij} | x_{ij} \sim Bin(n_i, \pi_{ij}) \\
 logit(\pi_{ij}) = \beta_0 + \beta_{1a} I(S_i = a) + \beta_{2b} I(A_i = b) + \beta_{3c} I(P_i = c) + \beta_{4bc} I( A_i = b, P_i = c) + \beta_{5ab} (S_i = a, A_i = b) + b_{0j} \\
@@ -332,6 +325,11 @@ default_model %>% posterior_summary() %>% kable(digits = 3, align = 'c')
 #### Random Effects
 
 # Research Questions
+
+**1. How did different demographic subgroups vote in the 2020 general elections? For example, how did the turnout for males compare to the turnout for females after controlling for other potential predictors?**
+**2. Did the overall probability or odds of voting differ by county in 2020? Which counties differ the most from other counties?**
+**3. How did the turnout rates differ between females and males for the different party affiliations?**
+**4. How did the turnout rates differ between age groups for the different party affiliations?**
 
 \newpage
 ## Appendix
