@@ -242,14 +242,25 @@ From the pie chart we can see that the winning party is the Democrats and there 
 
 ## Model - Selection / Specification
 
-$$
-y_{ij} | x_{ij} \sim Bin(n_i, \pi_{ij}) \\
-logit(\pi_{ij}) = \beta_0 + \beta_{1a} I(S_i = a) + \beta_{2b} I(A_i = b) + \beta_{3c} I(P_i = c) + \beta_{4bc} I( A_i = b, P_i = c) + \beta_{5ab} (S_i = a, A_i = b) + b_{0j} \\
-b_{0j} \sim N(0, \tau^2) \\
-p(\beta_0) \sim N(0, 10) \\
-p(\beta) \sim MVN(0, 10 * I_{n\beta}) \\
-p(\tau^2)  \sim \text{Student-t}(\nu=3, \mu=0, \sigma=1)
-$$
+Model selection was primarily chosen to address the research questions of interest
+
+- Research question 1 is interested in different demographic subgroups. As such, this warrants effects for sex, age, party, ethnicity, and race
+- Research question 2 is interested in exploring county-level effects. Because we are taking a random sample out of a larger population of counties, random intercepts are an appropriate choice here
+- Research questions 3 and 4 are interested in how the sex/age effect change as a function of party affiliation. As such, interactions between sex/party and age/party are warranted.
+
+Finally, we are asked to prepare a Bayesian hierarchical model - this is why we constructed the Bayesian model.
+
+\begin{gather*}
+  y_{ij} | x_{ij} \sim Bin(n_i, \pi_{ij}) \\
+  logit(\pi_{ij}) = \beta_0 + \beta_{1a} I(S_i = a) + \beta_{2b} I(A_i = b) + \beta_{3c} I(P_i = c) + \beta_{4d} I(E_i = d) + \beta_{5e} I(R_i = e) + \\
+  \beta_{6bc} I( A_i = b, P_i = c) + \beta_{7ab} I(S_i = a, A_i = b) + b_{0j} \\
+  b_{0j} \sim N(0, \tau^2) \\
+  p(\beta_0) \sim N(0, 10) \\
+  p(\beta) \sim MVN(0, 10 * I_{n\beta}) \\
+  p(\tau^2)  \sim \text{Student-t}(\nu=3, \mu=0, \sigma=1)
+\end{gather*}
+
+Where $S_i, A_i, P_i, E_i, R_i$ denote the sex, age range, party affiliation, ethnicity, and race of the group respectively, and where $j$ indexes 1 of 30 counties.
 
 
 ```{r Model}
@@ -403,7 +414,7 @@ post_summary %>%
   filter(Effect %in% sexes) %>%
   select(-c('Effect')) %>% 
   inv_logit_scaled() %>% 
-  mutate('Effect' = sex, .before = 'Estimate') %>% 
+  mutate('Effect' = sexes, .before = 'Estimate') %>% 
   kable(digits=3)
 ```
 
