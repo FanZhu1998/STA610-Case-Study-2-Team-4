@@ -242,20 +242,13 @@ From the pie chart we can see that the winning party is the Democrats and there 
 
 ## Model - Selection / Specification
 
-Your job is to use a Bayesian hierarchical model to answer the following questions of interest.
-
-1. How did different demographic subgroups vote in the 2020 general elections? For example, how did the turnout for males compare to the turnout for females after controlling for other potential predictors?
-2. Did the overall probability or odds of voting differ by county in 2020? Which counties differ the most from other counties?
-3. How did the turnout rates differ between females and males for the different party affiliations?
-4. How did the turnout rates differ between age groups for the different party affiliations?
-
 $$
 y_{ij} | x_{ij} \sim Bin(n_i, \pi_{ij}) \\
-logit(\pi_{ij}) = \beta_0 + \beta s_i + \beta A_i + \beta P_i + \beta (A_i * P_i) + \beta (A_i * S_i) + b_{0j} \\
+logit(\pi_{ij}) = \beta_0 + \beta_{1a} I(S_i = a) + \beta_{2b} I(A_i = b) + \beta_{3c} I(P_i = c) + \beta_{4bc} I( A_i = b, P_i = c) + \beta_{5ab} (S_i = a, A_i = b) + b_{0j} \\
 b_{0j} \sim N(0, \tau^2) \\
-p(\beta_0) \sim N(0, ?) \\
-p(\beta) \sim MVN(0, ?) \\
-p(\tau^2)  \sim \text{Inv-gamma}(?, ?)
+p(\beta_0) \sim N(0, 10) \\
+p(\beta) \sim MVN(0, 10 * I_{n\beta}) \\
+p(\tau^2)  \sim \text{Student-t}(\nu=3, \mu=0, \sigma=1)
 $$
 
 
@@ -323,15 +316,45 @@ legend('bottomright', legend=paste('AUROC:', auc_ROCR %>% round(3)), col=c('blac
 Here are the results of our inference. Fixed effects are given by the `b_` prefix, while random effects are given by the `r_` prefix. Finally, an estimate for the between-county variance can be found under `sd_County__Intercept`.
 
 ```{r Coefficient Table}
-default_model %>% posterior_summary() %>% kable(digits = 3, align = 'c')
+post_summary <- default_model %>% posterior_summary()
+post_summary %>% kable(digits = 3, align = 'c')
 ```
 
+Coefficients are given on the *log-odds* scale of probability. Thus, we would interpret a fixed effect as the expected change in the log-odds of voting compared to the reference group, holding all else constant. We can exponentiate this coefficient to obtain the regular change in odds, or we can apply the inverse link function (sigmoid) to recover the expected change in probability.
 
 #### Fixed Effects
 
 #### Random Effects
 
 # Research Questions
+
+**1. How did different demographic subgroups vote in the 2020 general elections? For example, how did the turnout for males compare to the turnout for females after controlling for other potential predictors?**
+
+Interpreting race
+
+Interpreting ethnicity
+
+Note: Effect for race is **not significant**. Ethnicity **does** appear to be significant
+
+It is easy to see the effect of race/ethnicity. The default level for race is ... and the default level for ethnicity is ... Because 
+
+Interpreting age (be aware of interaction - we cannot say "holding all else constant" because the age effect has an interaction that *depends* on party)
+
+Interpreting sex (be aware of interaction - we cannot say "holding all else constant" because the age effect has an interaction that *depends* on party)
+
+Interpreting party (be aware of interaction - we cannot say "holding all else constant" because the age effect has an interaction that *depends* on age/sex)
+
+**2. Did the overall probability or odds of voting differ by county in 2020? Which counties differ the most from other counties?**
+
+Investigate dotplot
+
+**3. How did the turnout rates differ between females and males for the different party affiliations?**
+
+For each *party*, investigate turnout rate (obtained via `inv_logit_scaled`) between females and males. This includes calculating the appropriate combination of main effects + interaction, and then converting to turnout
+
+**4. How did the turnout rates differ between age groups for the different party affiliations?**
+
+Mostly same as above. For each *party*, investigate turnout rate (obtained via `inv_logit_scaled`) between the age groups. This includes calculating the appropriate combination of main effects + interaction, and then converting to turnout.
 
 \newpage
 ## Appendix
