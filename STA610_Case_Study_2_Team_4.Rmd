@@ -13,7 +13,7 @@ geometry: margin=1.5cm
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, cache=TRUE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 3)
+knitr::opts_chunk$set(echo = FALSE, cache=TRUE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 3, fig.align = 'center')
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, cache=FALSE}
@@ -113,7 +113,7 @@ To reduce the computational complexity and get better estimates, we randomly sam
 
 ## EDA
 #### County
-```{r, fig.align='center'}
+```{r, fig.align='center', fig.height=4}
 # Party by County
 PartybyCounty <- ggplot(df, aes(x = County, fill = Party)) + 
   geom_bar(position = "fill") +
@@ -147,7 +147,7 @@ ggplot(df, aes(x = Precinct, y= Turnout, fill = Precinct)) +
 ```
 
 #### Sex
-```{r, fig.align='center', fig.height=1.5}
+```{r, fig.align='center', fig.height=2}
 # Party by Sex
 PartybySex <- ggplot(df, aes(x = Sex, fill = Party)) + 
   geom_bar(position = "fill") +
@@ -174,7 +174,7 @@ ggplot(df, aes(x = Vtd, y= Turnout, fill = Vtd)) +
 ```
 
 #### Race
-```{r, fig.align='center', fig.height=1.5}
+```{r, fig.align='center', fig.height=2.5}
 # Party by Race
 PartybyRace <- ggplot(df, aes(x = Race, fill = Party)) + 
   geom_bar(position = "fill") +
@@ -190,7 +190,7 @@ The median turn out rates do differ a lot by race, which necessitates us to incl
 
 
 #### Ethnic
-```{r, fig.align='center', fig.height=1.5}
+```{r, fig.align='center', fig.height=2}
 # Party by Ethnic
 PartybyEthnic <- ggplot(df, aes(x = Ethnic, fill = Party)) + 
   geom_bar(position = "fill") +
@@ -205,24 +205,30 @@ grid.arrange(PartybyEthnic, box_Ethnic, ncol = 2)
 The proportion of voting for Democrats is the highest in Hispanic than in other ethnicity, but the median turn out rate in Hispanic is the lowest. 
 
 #### Age
-```{r, fig.align='center', fig.height=1.5}
+```{r, fig.align='center', fig.width=7, fig.height=2}
 # Party by Age
-PartybyAge <- ggplot(df, aes(x = Age, fill = Party)) + 
-  geom_bar(position = "fill") +
-  labs(y = "Proportion") + 
-  coord_flip()
+PartybyAge <- ggplot(df,
+aes(x = Age,
+fill = Party)) +
+geom_bar(position = "fill") +
+labs(y = "Proportion") +
+coord_flip() +
+theme(axis.text=element_text(size=9))
 
 # Turnout by Age
-box_Age <- ggplot(df, aes(x = Age, y= Turnout, fill = Age)) + 
-  geom_boxplot() + 
-  coord_flip()
+box_Age <- ggplot(df, aes(x = Age,
+y= Turnout,
+fill = Age)) +
+geom_boxplot() +
+coord_flip() +
+theme(axis.text=element_text(size=7))
 
 grid.arrange(PartybyAge, box_Age, ncol = 2)
 ```
 As people grow older, their turn out rates tend to increase and there is a higher proportion of people voting for Republicans. Thus we will incorporate a main effect of age in our model. 
 
 #### Party
-```{r, fig.align='center', fig.height=1.5}
+```{r, fig.align='center', fig.height=2}
 # Pie Chart by Party
 Pie_Party <- ggplot(df, aes(x=factor(1), fill=Party))+
   geom_bar(width = 1) +
@@ -291,7 +297,7 @@ For the prior on between-group variance $\tau^2$, a student-t distribution is us
 
 To assess whether or not the Markov chain has achieved stationarity, we can investigate trace plots. There are too many parameters to paste *all* of the trace plots, so we will only investigate a subset of the reference intercept, a fixed effect, an interaction term, and a random effect
 
-```{r cache=FALSE, fig.height=1}
+```{r cache=FALSE, fig.height=1, fig.align = 'center'}
 #vars <- c('b_Intercept', 'b_AgeAge26M40', 'b_PartyDEM', 'b_SexM', 'b_RaceA', 'b_EthnicNL', #'b_AgeAge26M40:PartyDEM', 'b_PartyGRE:SexM', 'r_County[ASHE,Intercept]')
 vars <- c('b_Intercept', 'b_PartyDEM', 'b_PartyGRE:SexM')
 #plot(default_model, pars=vars, fixed=TRUE, ask=FALSE)
@@ -306,7 +312,7 @@ fitted_resp <- fitted(default_model)
 est_prob <- fitted_resp[, 'Estimate'] / df$total_registered_voter
 ```
 
-```{r}
+```{r fig.align = 'center'}
 # Create individual 0's and 1's for each group based off of registered and actual voters
 ground_truth_counts <- df$total_voted_voter
 ground_truth <- sapply(1:nrow(df), function(i) {
@@ -334,31 +340,6 @@ legend('bottomright', legend=paste('AUROC:', auc_ROCR %>% round(3)), col=c('blac
 
 Here are the results of our inference. Fixed effects are given by the `b_` prefix, while random effects are given by the `r_` prefix. Finally, an estimate for the between-county variance can be found under `sd_County__Intercept`.
 
-```{r Coefficient Table}
-post_summary <- default_model %>% posterior_summary() %>% as_tibble(rownames = 'Effect')
-post_summary_fixed <- post_summary %>% filter(!startsWith(Effect, 'r_'))
-#post_summary_random <- post_summary %>% filter(startsWith(Effect, 'r_'))
-#post_summary %>% kable(digits = 3, align = 'c')
-kable(post_summary_fixed, digits = 3, align = 'c')
-```
-
-```{r}
-# res_table <- default_model %>% posterior_summary()
-# res_table
-# res_table1 <- res_table[c(1:46),]
-# res_table1
-# res_table2 <- res_table[c(47:78),]
-# res_table2
-# res_table1 %>%
-# kable(digits = 3, align = 'c') %>%
-# kable_styling(full_width = F, position = "float_left")
-# 
-# res_table2 %>%
-#   kable(digits = 3, align = 'c') %>%
-#   kable_styling(full_width = F, position = "right")
-```
-
-
 Coefficients are given on the *log-odds* scale of probability. Thus, we would interpret a fixed effect as the expected change in the log-odds of voting compared to the reference group, holding all else constant. We can exponentiate this coefficient to obtain the regular change in odds, or we can apply the inverse link function (sigmoid) to recover the expected change in probability.
 
 # Research Questions
@@ -374,13 +355,15 @@ To interpret the coefficients as "turnout", we need to pass them through the `in
 The expected difference in turnout between a voter with the following race compared to a baseline race voter (holding all else constant) is given in the following table:
 
 ```{r Race}
+post_summary <- default_model %>% posterior_summary() %>% as_tibble(rownames = 'Effect')
 races <- post_summary %>% filter(startsWith(Effect, 'b_Race')) %>% pull(Effect)
 post_summary %>% 
   filter(Effect %in% races) %>% 
   select(-c('Effect')) %>% 
   inv_logit_scaled() %>% 
   mutate('Race' = races, .before = 'Estimate') %>% 
-  kable(digits=3)
+  kable(digits=3) %>% 
+  kable_styling(position = "center", latex_options = "HOLD_position")
 ```
 
 Again, interpretation for this variable is difficult due to the erroneous baseline - but an example interpretation is given as follows for reference. An Asian voter has an expected increase in probability of voting of $0.932 - 0.5 = 0.432$ compared to this baseline level, holding all else constant. We observe that all of race effects contain credible intervals of 0, and as such we cannot conclude that race has an impact on voting.
@@ -394,7 +377,8 @@ post_summary %>%
   select(-c('Effect')) %>% 
   inv_logit_scaled() %>% 
   mutate('Effect' = ethnicities, .before = 'Estimate') %>% 
-  kable(digits = 3)
+  kable(digits = 3) %>% 
+  kable_styling(position = "center", latex_options = "HOLD_position")
 ```
 
 Holding all else constant:
@@ -415,7 +399,8 @@ post_summary %>%
   select(-c('Effect')) %>% 
   inv_logit_scaled() %>% 
   mutate('Effect' = ages, .before = 'Estimate') %>% 
-  kable(digits = 3)
+  kable(digits = 3) %>% 
+  kable_styling(position = "center",latex_options = "HOLD_position")
 ```
 
 One example interpretation: holding all else constant, a 26-40 year old CST voter has an expected increase in probability of voting of 0.239 compared to an 18-25 year old CST voter. All age effects are significant, and we observe an increase of voter turnout with age (again, for CST party only).
@@ -437,7 +422,8 @@ post_summary %>%
   select(-c('Effect')) %>% 
   inv_logit_scaled() %>% 
   mutate('Effect' = sexes, .before = 'Estimate') %>% 
-  kable(digits=3)
+  kable(digits=3) %>% 
+  kable_styling(position = "center", latex_options = "HOLD_position")
 ```
 
 Holding all else constant:
@@ -458,7 +444,8 @@ post_summary %>%
   select(-c('Effect')) %>% 
   inv_logit_scaled() %>% 
   mutate('Effect' = parties, .before = 'Estimate') %>% 
-  kable(digits=3)
+  kable(digits=3) %>% 
+  kable_styling(position = "center", latex_options = "HOLD_position")
 ```
 
 One interpretation given (other follow similarly). Holding all else constant, 18-25 year old female Democrat voters have an expected increase in the probability of voting of 0.253 compared to 18-25 year old female CST voters. This effect only appears to be significant for Democrat and Republican voters however.
@@ -473,7 +460,7 @@ One interpretation given (other follow similarly). Holding all else constant, 18
 
 **2. Did the overall probability or odds of voting differ by county in 2020? Which counties differ the most from other counties?**
 
-```{r}
+```{r fig.height=4}
 #ranef(default_model) %>% kable(digits = 3, align = 'c')
 
 ranef(default_model)$County[, , 1] %>%
@@ -503,11 +490,16 @@ Female turnout was higher in the DEM, LIB, REP, and UNA parties, with difference
 
 For the age groups, the people whose ages range from 18 to 25 belong to the reference group.
 
-For people who voted for the Democrats, the turnout rate for the registered voters who ages range from 18 to 25 is 6.85%. The turnout rate for the registered voters whose ages range from 26 to 40 is 7.85%. The turnout rate for the registered voters whose ages range from 41 to 65 is 17.80%. The turnout rate for the registered voters whose ages are over 66 is 17.91%.
 
-For people who voted for the Republicans, the turnout rate for the registered voters who ages range from 18 to 25 is 8.46%. The turnout rate for the registered voters whose ages range from 26 to 40 is 10.48%. The turnout rate for the registered voters whose ages range from 41 to 65 is 20.07%. The turnout rate for the registered voters whose ages are over 66 is 19.99%.
+For people who voted for the Democrats, the turnout rate is 6.85% for the registered voters who ages range from 18 to 25, 7.85% for the registered voters whose ages range from 26 to 40, 17.80% for the registered voters whose ages range from 41 to 65, and 17.91% for the registered voters whose ages are over 66.
 
-For people who voted for the Libertarians, the turnout rate for the registered voters who ages range from 18 to 25 is 3.93%. The turnout rate for the registered voters whose ages range from 26 to 40 is 5.26%. The turnout rate for the registered voters whose ages range from 41 to 65 is 7.72%. The turnout rate for the registered voters whose ages are over 66 is 8.42%.
+For people who voted for the Republicans, the turnout rate is 8.46% for the registered voters who ages range from 18 to 25, 10.48% for the registered voters whose ages range from 26 to 40, 20.07% for the registered voters whose ages range from 41 to 65, and 19.99% for the registered voters whose ages are over 66.
+
+For people who voted for the Libertarians, the turnout rate is 3.93% for the registered voters who ages range from 18 to 25, 5.26% for the registered voters whose ages range from 26 to 40, 7.72% for the registered voters whose ages range from 41 to 65, and 8.42% for the registered voters whose ages are over 66.
+
+For people who voted for the Green Party, the turnout rate is 3.31% for the registered voters who ages range from 18 to 25, 3.84% for the registered voters whose ages range from 26 to 40, 6.86% for the registered voters whose ages range from 41 to 65, and 4.22% for the registered voters whose ages are over 66.
+
+For people who are unaffiliated with any party, the turnout rate is 4.53% for the registered voters who ages range from 18 to 25, 6.20% for the registered voters whose ages range from 26 to 40, 12.93% for the registered voters whose ages range from 41 to 65, and 16.96% for the registered voters whose ages are over 66.
 
 For people who voted for the Green Party, the turnout rate for the registered voters who ages range from 18 to 25 is 3.31%. The turnout rate for the registered voters whose ages range from 26 to 40 is 3.84%. The turnout rate for the registered voters whose ages range from 41 to 65 is 6.86%. The turnout rate for the registered voters whose ages are over 66 is 4.22%.
 
@@ -521,4 +513,11 @@ Our analysis has several limitations. First, running brm model is quite time con
 ## Appendix
 
 ```{r, ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```
+
+```{r Coefficient Table}
+post_summary_fixed <- post_summary %>% filter(!startsWith(Effect, 'r_'))
+#post_summary_random <- post_summary %>% filter(startsWith(Effect, 'r_'))
+#post_summary %>% kable(digits = 3, align = 'c')
+kable(post_summary_fixed, digits = 3, align = 'c') %>% kable_styling(position = "center", latex_options = "HOLD_position")
 ```
