@@ -455,7 +455,29 @@ Compared to 18-25 year old female CST voters. This effect only appears to be sig
 
 **2. Did the overall probability or odds of voting differ by county in 2020? Which counties differ the most from other counties?**
 
-Investigate dotplot
+#### Random Effects
+
+```{r}
+#ranef(default_model) %>% kable(digits = 3, align = 'c')
+
+ranef(default_model)$County[, , 1] %>%
+  as_tibble() %>%
+  mutate(param = unique(df$County),
+  reorder = c(30:1)) %>%
+  ggplot(aes(x = reorder(param, reorder))) +
+  geom_hline(yintercept = 0, linetype = 3, color = "#8B9DAF") +
+  geom_pointrange(aes(ymin = Q2.5, ymax = Q97.5, y = Estimate,
+                  color = reorder %in% c(26,30)),
+                  shape = 20, size = 3/4) +
+  scale_color_manual(values = c("#394165", "#A65141")) +
+  labs(x = "County", y = "Estimate") +
+  coord_flip() +
+  theme(legend.position = "none",
+      axis.ticks.y = element_blank(),
+      axis.text.y = element_text(hjust = 0))
+```
+
+Based on our dataset and final model with 30 random selected counties, the overall odds of voting differ a lot by county in 2020. The values of the odds of voting range from exp(-0.380) = 0.684 for County Anson to exp(0.239) = 1.270 for County Cabarrus. The estimated average odds of voting is highest for County Cabarrus and lowest for County Anson when all the other variables are the same. Thus, County Cabarrus and County Anson differ the most from other counties.
 
 **3. How did the turnout rates differ between females and males for the different party affiliations?**
 
@@ -474,6 +496,10 @@ For people who voted for the Libertarians, the turnout rate for the registered v
 For people who voted for the Green Party, the turnout rate for the registered voters who ages range from 18 to 25 is 3.31%. The turnout rate for the registered voters whose ages range from 26 to 40 is 3.84%. The turnout rate for the registered voters whose ages range from 41 to 65 is 6.86%. The turnout rate for the registered voters whose ages are over 66 is 4.22%.
 
 For people who are unaffiliated with any party, the turnout rate for the registered voters who ages range from 18 to 25 is 4.53%. The turnout rate for the registered voters whose ages range from 26 to 40 is 6.20%. The turnout rate for the registered voters whose ages range from 41 to 65 is 12.93%. The turnout rate for the registered voters whose ages are over 66 is 16.96%.
+
+## Limitations
+
+Our analysis has several limitations. First, running brm model is quite time consuming, so we narrow down our dataset a lot and run as many iterations as possible on this smaller dataset. Next, we don't really try to use poststratification to reweight the estimate by the representation of each county. Thus, our sample could be slightly biased. Finally, because of the clear objectives given in research questions, we directly build our model based on questions of interest without diving into model selection too much.
 
 \newpage
 ## Appendix
