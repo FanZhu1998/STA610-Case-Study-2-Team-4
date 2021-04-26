@@ -13,7 +13,7 @@ geometry: margin=2cm
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, cache=TRUE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 4)
+knitr::opts_chunk$set(echo = FALSE, cache=TRUE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 3)
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, cache=FALSE}
@@ -113,7 +113,7 @@ To reduce the computational complexity and get better estimates, we randomly sam
 
 ## EDA
 #### County
-```{r, fig.align='center', fig.height=3.6}
+```{r, fig.align='center'}
 # Party by County
 PartybyCounty <- ggplot(df, aes(x = County, fill = Party)) + 
   geom_bar(position = "fill") +
@@ -122,13 +122,16 @@ PartybyCounty <- ggplot(df, aes(x = County, fill = Party)) +
 # PartybyCounty
 
 # Turnout by County
-box_County <- ggplot(df, aes(x = County, y= Turnout, fill = County)) + 
-  geom_boxplot() + 
-  coord_flip()
+# Turnout by County
+box_County <- ggplot(df, aes(x = County,
+  y= Turnout,
+  fill = County)) +
+  geom_boxplot() +
+  coord_flip() +
+  theme(legend.position = "none")
 box_County
 ```
 From the boxplot we can see that the median turnout rates do differ by county, which justifies the random intercepts by county in our model.
-
 
 ```{r, include = FALSE}
 #### Preccint
@@ -144,7 +147,7 @@ ggplot(df, aes(x = Precinct, y= Turnout, fill = Precinct)) +
 ```
 
 #### Sex
-```{r, fig.align='center', fig.height=2}
+```{r, fig.align='center', fig.height=1.5}
 # Party by Sex
 PartybySex <- ggplot(df, aes(x = Sex, fill = Party)) + 
   geom_bar(position = "fill") +
@@ -171,7 +174,7 @@ ggplot(df, aes(x = Vtd, y= Turnout, fill = Vtd)) +
 ```
 
 #### Race
-```{r, fig.align='center', fig.height=2}
+```{r, fig.align='center', fig.height=1.5}
 # Party by Race
 PartybyRace <- ggplot(df, aes(x = Race, fill = Party)) + 
   geom_bar(position = "fill") +
@@ -187,7 +190,7 @@ The median turn out rates do differ a lot by race, which necessitates us to incl
 
 
 #### Ethnic
-```{r, fig.align='center', fig.height=2}
+```{r, fig.align='center', fig.height=1.5}
 # Party by Ethnic
 PartybyEthnic <- ggplot(df, aes(x = Ethnic, fill = Party)) + 
   geom_bar(position = "fill") +
@@ -202,7 +205,7 @@ grid.arrange(PartybyEthnic, box_Ethnic, ncol = 2)
 The proportion of voting for Democrats is the highest in Hispanic than in other ethnicity, but the median turn out rate in Hispanic is the lowest. 
 
 #### Age
-```{r, fig.align='center', fig.height=2}
+```{r, fig.align='center', fig.height=1.5}
 # Party by Age
 PartybyAge <- ggplot(df, aes(x = Age, fill = Party)) + 
   geom_bar(position = "fill") +
@@ -219,7 +222,7 @@ grid.arrange(PartybyAge, box_Age, ncol = 2)
 As people grow older, their turn out rates tend to increase and there is a higher proportion of people voting for Republicans. Thus we will incorporate a main effect of age in our model. 
 
 #### Party
-```{r, fig.align='center', fig.height=2}
+```{r, fig.align='center', fig.height=1.5}
 # Pie Chart by Party
 Pie_Party <- ggplot(df, aes(x=factor(1), fill=Party))+
   geom_bar(width = 1) +
@@ -454,8 +457,6 @@ Holding all else constant,
 Compared to 18-25 year old female CST voters. This effect only appears to be significant for Democrat and Republican voters however.
 
 **2. Did the overall probability or odds of voting differ by county in 2020? Which counties differ the most from other counties?**
-
-#### Random Effects
 
 ```{r}
 #ranef(default_model) %>% kable(digits = 3, align = 'c')
