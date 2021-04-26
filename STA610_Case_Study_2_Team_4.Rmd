@@ -459,7 +459,7 @@ Investigate dotplot
 
 **3. How did the turnout rates differ between females and males for the different party affiliations?**
 
-For each *party*, investigate turnout rate (obtained via `inv_logit_scaled`) between females and males. This includes calculating the appropriate combination of main effects + interaction, and then converting to turnout
+Female turnout was higher in the DEM, LIB, REP, and UNA parties, with differences ranging from 0.03927877 - 0.03823569 = 0.00104308 higher in the LIB party to 0.01381628 higher in the DEM party. Male turnout was higher in the CST and GRE parties, with the GRE party having the bigger difference at 0.04917241 - 0.03308598 = 0.01608643.
 
 **4. How did the turnout rates differ between age groups for the different party affiliations?**
 
