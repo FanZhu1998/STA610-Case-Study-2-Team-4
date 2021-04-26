@@ -9,7 +9,7 @@ date: "`r Sys.Date()`"
 output:
   pdf_document: default
 fontsize: 11pt
-geometry: margin=2cm
+geometry: margin=1.5cm
 ---
 
 ```{r setup, include=FALSE}
@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = FALSE, cache=TRUE, message = FALSE, warning = FALSE
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, cache=FALSE}
 if (!require(pacman)) install.packages("pacman")
-pacman::p_load(tidyverse, lme4, gridExtra, grid, ggplot2, lattice, redres, stringr, influence.ME, knitr, GGally, corrplot, brms, rstan, cowplot, directlabels, tidybayes, parallel, ROCR, bayesplot)
+pacman::p_load(tidyverse, lme4, gridExtra, grid, ggplot2, lattice, redres, stringr, influence.ME, knitr, GGally, corrplot, brms, rstan, cowplot, directlabels, tidybayes, parallel, ROCR, bayesplot, kableExtra)
 
 rstan_options(auto_write=TRUE)
 options(mc.cores=parallel::detectCores())
@@ -342,9 +342,24 @@ post_summary_fixed <- post_summary %>% filter(!startsWith(Effect, 'r_'))
 kable(post_summary_fixed, digits = 3, align = 'c')
 ```
 
-Coefficients are given on the *log-odds* scale of probability. Thus, we would interpret a fixed effect as the expected change in the log-odds of voting compared to the reference group, holding all else constant. We can exponentiate this coefficient to obtain the regular change in odds, or we can apply the inverse link function (sigmoid) to recover the expected change in probability.
+```{r}
+# res_table <- default_model %>% posterior_summary()
+# res_table
+# res_table1 <- res_table[c(1:46),]
+# res_table1
+# res_table2 <- res_table[c(47:78),]
+# res_table2
+# res_table1 %>%
+# kable(digits = 3, align = 'c') %>%
+# kable_styling(full_width = F, position = "float_left")
+# 
+# res_table2 %>%
+#   kable(digits = 3, align = 'c') %>%
+#   kable_styling(full_width = F, position = "right")
+```
 
-A coefficient with no effect (estimate of 0 on log-odds) will have an inverse logit of 0.5. Negative and positive effects will produce inverse logit results of less than 0.5 and greater than 0.5 respectively. The difference from 0.5 can interpreted as the expected decrease / increase in the probability of voting from the baseline.
+
+Coefficients are given on the *log-odds* scale of probability. Thus, we would interpret a fixed effect as the expected change in the log-odds of voting compared to the reference group, holding all else constant. We can exponentiate this coefficient to obtain the regular change in odds, or we can apply the inverse link function (sigmoid) to recover the expected change in probability.
 
 # Research Questions
 
@@ -403,13 +418,13 @@ post_summary %>%
   kable(digits = 3)
 ```
 
-Holding all else constant:
+One example interpretation: holding all else constant, a 26-40 year old CST voter has an expected increase in probability of voting of 0.239 compared to an 18-25 year old CST voter. All age effects are significant, and we observe an increase of voter turnout with age (again, for CST party only).
 
-- An 26-40 year old CST voter has an expected increase in probability of voting of 0.239
-- A 41-65 year old CST voter has an expected increase in probability of voting of 0.259
-- A 66+ year old CST voter has an expected increase in probability of voting of 0.339 
-
-Compared to an 18-25 year CST voter. All age effects are significant, and we observe an increase of voter turnout with age (again, for CST party only).
+```{r}
+# An 26-40 year old CST voter has an expected increase in probability of voting of 0.239
+#A 41-65 year old CST voter has an expected increase in probability of voting of 0.259
+#A 66+ year old CST voter has an expected increase in probability of voting of 0.339 
+```
 
 ### Sex
 
@@ -446,15 +461,15 @@ post_summary %>%
   kable(digits=3)
 ```
 
-Holding all else constant,
+One interpretation given (other follow similarly). Holding all else constant, 18-25 year old female Democrat voters have an expected increase in the probability of voting of 0.253 compared to 18-25 year old female CST voters. This effect only appears to be significant for Democrat and Republican voters however.
 
-- 18-25 year old female Democrat voters have an expected increase in the probability of voting of 0.253
-- 18-25 year old female GRE voters have an expected increase in the probability of voting of 0.087
-- 18-25 year old female Libertarian voters have an expected increase in the probability of voting of 0.127
-- 18-25 year old female Democrat voters have an expected increase in the probability of voting of 0.293
-- 18-25 year old unaffiliated female voters have an expected increase in the probability of voting of 0.163
-
-Compared to 18-25 year old female CST voters. This effect only appears to be significant for Democrat and Republican voters however.
+```{r}
+# - 18-25 year old female Democrat voters have an expected increase in the probability of voting of 0.253
+# - 18-25 year old female GRE voters have an expected increase in the probability of voting of 0.087
+# - 18-25 year old female Libertarian voters have an expected increase in the probability of voting of 0.127
+# - 18-25 year old female Democrat voters have an expected increase in the probability of voting of 0.293
+# - 18-25 year old unaffiliated female voters have an expected increase in the probability of voting of 0.163
+```
 
 **2. Did the overall probability or odds of voting differ by county in 2020? Which counties differ the most from other counties?**
 
@@ -482,7 +497,7 @@ Based on our dataset and final model with 30 random selected counties, the overa
 
 **3. How did the turnout rates differ between females and males for the different party affiliations?**
 
-Female turnout was higher in the DEM, LIB, REP, and UNA parties, with differences ranging from 0.03927877 - 0.03823569 = 0.00104308 higher in the LIB party to 0.01381628 higher in the DEM party. Male turnout was higher in the CST and GRE parties, with the GRE party having the bigger difference at 0.04917241 - 0.03308598 = 0.01608643.
+Female turnout was higher in the DEM, LIB, REP, and UNA parties, with differences ranging from 0.039 - 0.0382 = 0.001 higher in the LIB party to 0.014 higher in the DEM party. Male turnout was higher in the CST and GRE parties, with the GRE party having the bigger difference at 0.0491 - 0.033 = 0.016.
 
 **4. How did the turnout rates differ between age groups for the different party affiliations?**
 
