@@ -1,10 +1,10 @@
 ---
 title: \vspace{-1.5cm} \textbf{STA610 Case Study 2 Report}
 author:
-- Cole Juracek 
-- Lauren Palazzo 
-- Lingyu Zhou 
-- Fan Zhu
+- Cole Juracek (Checker and coordinator)
+- Lauren Palazzo (Programmer)
+- Lingyu Zhou (Writer)
+- Fan Zhu (Presenter)
 date: "`r Sys.Date()`"
 output:
   pdf_document: default
