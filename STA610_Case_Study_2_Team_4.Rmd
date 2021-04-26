@@ -9,16 +9,16 @@ date: "`r Sys.Date()`"
 output:
   pdf_document: default
 fontsize: 11pt
-geometry: margin=2cm
+geometry: margin=1.5cm
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, cache=TRUE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 4)
+knitr::opts_chunk$set(echo = FALSE, cache=TRUE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 3, fig.align = 'center')
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, cache=FALSE}
 if (!require(pacman)) install.packages("pacman")
-pacman::p_load(tidyverse, lme4, gridExtra, grid, ggplot2, lattice, redres, stringr, influence.ME, knitr, GGally, corrplot, brms, rstan, cowplot, directlabels, tidybayes, parallel, ROCR, bayesplot)
+pacman::p_load(tidyverse, lme4, gridExtra, grid, ggplot2, lattice, redres, stringr, influence.ME, knitr, GGally, corrplot, brms, rstan, cowplot, directlabels, tidybayes, parallel, ROCR, bayesplot, kableExtra)
 
 rstan_options(auto_write=TRUE)
 options(mc.cores=parallel::detectCores())
@@ -113,7 +113,7 @@ To reduce the computational complexity and get better estimates, we randomly sam
 
 ## EDA
 #### County
-```{r, fig.align='center', fig.height=3.6}
+```{r, fig.align='center', fig.height=4}
 # Party by County
 PartybyCounty <- ggplot(df, aes(x = County, fill = Party)) + 
   geom_bar(position = "fill") +
@@ -122,13 +122,16 @@ PartybyCounty <- ggplot(df, aes(x = County, fill = Party)) +
 # PartybyCounty
 
 # Turnout by County
-box_County <- ggplot(df, aes(x = County, y= Turnout, fill = County)) + 
-  geom_boxplot() + 
-  coord_flip()
+# Turnout by County
+box_County <- ggplot(df, aes(x = County,
+  y= Turnout,
+  fill = County)) +
+  geom_boxplot() +
+  coord_flip() +
+  theme(legend.position = "none")
 box_County
 ```
 From the boxplot we can see that the median turnout rates do differ by county, which justifies the random intercepts by county in our model.
-
 
 ```{r, include = FALSE}
 #### Preccint
@@ -171,7 +174,7 @@ ggplot(df, aes(x = Vtd, y= Turnout, fill = Vtd)) +
 ```
 
 #### Race
-```{r, fig.align='center', fig.height=2}
+```{r, fig.align='center', fig.height=2.5}
 # Party by Race
 PartybyRace <- ggplot(df, aes(x = Race, fill = Party)) + 
   geom_bar(position = "fill") +
@@ -202,17 +205,23 @@ grid.arrange(PartybyEthnic, box_Ethnic, ncol = 2)
 The proportion of voting for Democrats is the highest in Hispanic than in other ethnicity, but the median turn out rate in Hispanic is the lowest. 
 
 #### Age
-```{r, fig.align='center', fig.height=2}
+```{r, fig.align='center', fig.width=7, fig.height=2}
 # Party by Age
-PartybyAge <- ggplot(df, aes(x = Age, fill = Party)) + 
-  geom_bar(position = "fill") +
-  labs(y = "Proportion") + 
-  coord_flip()
+PartybyAge <- ggplot(df,
+aes(x = Age,
+fill = Party)) +
+geom_bar(position = "fill") +
+labs(y = "Proportion") +
+coord_flip() +
+theme(axis.text=element_text(size=9))
 
 # Turnout by Age
-box_Age <- ggplot(df, aes(x = Age, y= Turnout, fill = Age)) + 
-  geom_boxplot() + 
-  coord_flip()
+box_Age <- ggplot(df, aes(x = Age,
+y= Turnout,
+fill = Age)) +
+geom_boxplot() +
+coord_flip() +
+theme(axis.text=element_text(size=7))
 
 grid.arrange(PartybyAge, box_Age, ncol = 2)
 ```
@@ -288,7 +297,7 @@ For the prior on between-group variance $\tau^2$, a student-t distribution is us
 
 To assess whether or not the Markov chain has achieved stationarity, we can investigate trace plots. There are too many parameters to paste *all* of the trace plots, so we will only investigate a subset of the reference intercept, a fixed effect, an interaction term, and a random effect
 
-```{r cache=FALSE, fig.height=1}
+```{r cache=FALSE, fig.height=1, fig.align = 'center'}
 #vars <- c('b_Intercept', 'b_AgeAge26M40', 'b_PartyDEM', 'b_SexM', 'b_RaceA', 'b_EthnicNL', #'b_AgeAge26M40:PartyDEM', 'b_PartyGRE:SexM', 'r_County[ASHE,Intercept]')
 vars <- c('b_Intercept', 'b_PartyDEM', 'b_PartyGRE:SexM')
 #plot(default_model, pars=vars, fixed=TRUE, ask=FALSE)
@@ -303,7 +312,7 @@ fitted_resp <- fitted(default_model)
 est_prob <- fitted_resp[, 'Estimate'] / df$total_registered_voter
 ```
 
-```{r}
+```{r fig.align = 'center'}
 # Create individual 0's and 1's for each group based off of registered and actual voters
 ground_truth_counts <- df$total_voted_voter
 ground_truth <- sapply(1:nrow(df), function(i) {
@@ -331,17 +340,7 @@ legend('bottomright', legend=paste('AUROC:', auc_ROCR %>% round(3)), col=c('blac
 
 Here are the results of our inference. Fixed effects are given by the `b_` prefix, while random effects are given by the `r_` prefix. Finally, an estimate for the between-county variance can be found under `sd_County__Intercept`.
 
-```{r Coefficient Table}
-post_summary <- default_model %>% posterior_summary() %>% as_tibble(rownames = 'Effect')
-post_summary_fixed <- post_summary %>% filter(!startsWith(Effect, 'r_'))
-#post_summary_random <- post_summary %>% filter(startsWith(Effect, 'r_'))
-#post_summary %>% kable(digits = 3, align = 'c')
-kable(post_summary_fixed, digits = 3, align = 'c')
-```
-
 Coefficients are given on the *log-odds* scale of probability. Thus, we would interpret a fixed effect as the expected change in the log-odds of voting compared to the reference group, holding all else constant. We can exponentiate this coefficient to obtain the regular change in odds, or we can apply the inverse link function (sigmoid) to recover the expected change in probability.
-
-A coefficient with no effect (estimate of 0 on log-odds) will have an inverse logit of 0.5. Negative and positive effects will produce inverse logit results of less than 0.5 and greater than 0.5 respectively. The difference from 0.5 can interpreted as the expected decrease / increase in the probability of voting from the baseline.
 
 # Research Questions
 
@@ -356,13 +355,15 @@ To interpret the coefficients as "turnout", we need to pass them through the `in
 The expected difference in turnout between a voter with the following race compared to a baseline race voter (holding all else constant) is given in the following table:
 
 ```{r Race}
+post_summary <- default_model %>% posterior_summary() %>% as_tibble(rownames = 'Effect')
 races <- post_summary %>% filter(startsWith(Effect, 'b_Race')) %>% pull(Effect)
 post_summary %>% 
   filter(Effect %in% races) %>% 
   select(-c('Effect')) %>% 
   inv_logit_scaled() %>% 
   mutate('Race' = races, .before = 'Estimate') %>% 
-  kable(digits=3)
+  kable(digits=3) %>% 
+  kable_styling(position = "center", latex_options = "HOLD_position")
 ```
 
 Again, interpretation for this variable is difficult due to the erroneous baseline - but an example interpretation is given as follows for reference. An Asian voter has an expected increase in probability of voting of $0.932 - 0.5 = 0.432$ compared to this baseline level, holding all else constant. We observe that all of race effects contain credible intervals of 0, and as such we cannot conclude that race has an impact on voting.
@@ -376,7 +377,8 @@ post_summary %>%
   select(-c('Effect')) %>% 
   inv_logit_scaled() %>% 
   mutate('Effect' = ethnicities, .before = 'Estimate') %>% 
-  kable(digits = 3)
+  kable(digits = 3) %>% 
+  kable_styling(position = "center", latex_options = "HOLD_position")
 ```
 
 Holding all else constant:
@@ -397,16 +399,17 @@ post_summary %>%
   select(-c('Effect')) %>% 
   inv_logit_scaled() %>% 
   mutate('Effect' = ages, .before = 'Estimate') %>% 
-  kable(digits = 3)
+  kable(digits = 3) %>% 
+  kable_styling(position = "center",latex_options = "HOLD_position")
 ```
 
-Holding all else constant:
+Holding all else constant, 
 
 - An 26-40 year old CST voter has an expected increase in probability of voting of 0.239
 - A 41-65 year old CST voter has an expected increase in probability of voting of 0.259
-- A 66+ year old CST voter has an expected increase in probability of voting of 0.339 
+- A 66+ year old CST voter has an expected increase in probability of voting of 0.339
 
-Compared to an 18-25 year CST voter. All age effects are significant, and we observe an increase of voter turnout with age (again, for CST party only).
+compared to an 18-25 year old CST voter. All age effects are significant, and we observe an increase of voter turnout with age (again, for CST party only).
 
 ### Sex
 
@@ -419,7 +422,8 @@ post_summary %>%
   select(-c('Effect')) %>% 
   inv_logit_scaled() %>% 
   mutate('Effect' = sexes, .before = 'Estimate') %>% 
-  kable(digits=3)
+  kable(digits=3) %>% 
+  kable_styling(position = "center", latex_options = "HOLD_position")
 ```
 
 Holding all else constant:
@@ -440,7 +444,8 @@ post_summary %>%
   select(-c('Effect')) %>% 
   inv_logit_scaled() %>% 
   mutate('Effect' = parties, .before = 'Estimate') %>% 
-  kable(digits=3)
+  kable(digits=3) %>% 
+  kable_styling(position = "center", latex_options = "HOLD_position")
 ```
 
 Holding all else constant,
@@ -451,22 +456,68 @@ Holding all else constant,
 - 18-25 year old female Democrat voters have an expected increase in the probability of voting of 0.293
 - 18-25 year old unaffiliated female voters have an expected increase in the probability of voting of 0.163
 
-Compared to 18-25 year old female CST voters. This effect only appears to be significant for Democrat and Republican voters however.
+compared to 18-25 year old female CST voters. This effect only appears to be significant for Democrat and Republican voters however.
 
 **2. Did the overall probability or odds of voting differ by county in 2020? Which counties differ the most from other counties?**
 
-Investigate dotplot
+```{r fig.height=4}
+#ranef(default_model) %>% kable(digits = 3, align = 'c')
+
+ranef(default_model)$County[, , 1] %>%
+  as_tibble() %>%
+  mutate(param = unique(df$County),
+  reorder = c(30:1)) %>%
+  ggplot(aes(x = reorder(param, reorder))) +
+  geom_hline(yintercept = 0, linetype = 3, color = "#8B9DAF") +
+  geom_pointrange(aes(ymin = Q2.5, ymax = Q97.5, y = Estimate,
+                  color = reorder %in% c(26,30)),
+                  shape = 20, size = 3/4) +
+  scale_color_manual(values = c("#394165", "#A65141")) +
+  labs(x = "County", y = "Estimate") +
+  coord_flip() +
+  theme(legend.position = "none",
+      axis.ticks.y = element_blank(),
+      axis.text.y = element_text(hjust = 0))
+```
+
+Based on our dataset and final model with 30 random selected counties, the overall odds of voting differ a lot by county in 2020. The values of the odds of voting range from exp(-0.380) = 0.684 for County Anson to exp(0.239) = 1.270 for County Cabarrus. The estimated average odds of voting is highest for County Cabarrus and lowest for County Anson when all the other variables are the same. Thus, County Cabarrus and County Anson differ the most from other counties.
 
 **3. How did the turnout rates differ between females and males for the different party affiliations?**
 
-For each *party*, investigate turnout rate (obtained via `inv_logit_scaled`) between females and males. This includes calculating the appropriate combination of main effects + interaction, and then converting to turnout
+Female turnout was higher in the DEM, LIB, REP, and UNA parties, with differences ranging from 0.039 - 0.0382 = 0.001 higher in the LIB party to 0.014 higher in the DEM party. Male turnout was higher in the CST and GRE parties, with the GRE party having the bigger difference at 0.0491 - 0.033 = 0.016.
 
 **4. How did the turnout rates differ between age groups for the different party affiliations?**
 
-Mostly same as above. For each *party*, investigate turnout rate (obtained via `inv_logit_scaled`) between the age groups. This includes calculating the appropriate combination of main effects + interaction, and then converting to turnout.
+For the age groups, the people whose ages range from 18 to 25 belong to the reference group.
+
+
+For people who voted for the Democrats, the turnout rate is 6.85% for the registered voters who ages range from 18 to 25, 7.85% for the registered voters whose ages range from 26 to 40, 17.80% for the registered voters whose ages range from 41 to 65, and 17.91% for the registered voters whose ages are over 66.
+
+For people who voted for the Republicans, the turnout rate is 8.46% for the registered voters who ages range from 18 to 25, 10.48% for the registered voters whose ages range from 26 to 40, 20.07% for the registered voters whose ages range from 41 to 65, and 19.99% for the registered voters whose ages are over 66.
+
+For people who voted for the Libertarians, the turnout rate is 3.93% for the registered voters who ages range from 18 to 25, 5.26% for the registered voters whose ages range from 26 to 40, 7.72% for the registered voters whose ages range from 41 to 65, and 8.42% for the registered voters whose ages are over 66.
+
+For people who voted for the Green Party, the turnout rate is 3.31% for the registered voters who ages range from 18 to 25, 3.84% for the registered voters whose ages range from 26 to 40, 6.86% for the registered voters whose ages range from 41 to 65, and 4.22% for the registered voters whose ages are over 66.
+
+For people who are unaffiliated with any party, the turnout rate is 4.53% for the registered voters who ages range from 18 to 25, 6.20% for the registered voters whose ages range from 26 to 40, 12.93% for the registered voters whose ages range from 41 to 65, and 16.96% for the registered voters whose ages are over 66.
+
+For people who voted for the Green Party, the turnout rate for the registered voters who ages range from 18 to 25 is 3.31%. The turnout rate for the registered voters whose ages range from 26 to 40 is 3.84%. The turnout rate for the registered voters whose ages range from 41 to 65 is 6.86%. The turnout rate for the registered voters whose ages are over 66 is 4.22%.
+
+For people who are unaffiliated with any party, the turnout rate for the registered voters who ages range from 18 to 25 is 4.53%. The turnout rate for the registered voters whose ages range from 26 to 40 is 6.20%. The turnout rate for the registered voters whose ages range from 41 to 65 is 12.93%. The turnout rate for the registered voters whose ages are over 66 is 16.96%.
+
+## Limitations
+
+Our analysis has several limitations. First, running brm model is quite time consuming, so we narrow down our dataset a lot and run as many iterations as possible on this smaller dataset. This reduction in size of data may be the cause of wide confidence intervals around some our estimates. Next, we don't really try to use poststratification to reweight the estimate by the representation of each county. Thus, our sample could be slightly biased. This could explain why some of our estimates seem unexpectedly low (e.g., <5% turnout among registered voters of some groups. Finally, because of the clear objectives given in research questions, we directly build our model based on questions of interest without diving into model selection too much. Therefore there may be additional predictors that would approve our model's predictive power, but we did not consider them here.
 
 \newpage
 ## Appendix
 
 ```{r, ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```
+
+```{r Coefficient Table}
+post_summary_fixed <- post_summary %>% filter(!startsWith(Effect, 'r_'))
+#post_summary_random <- post_summary %>% filter(startsWith(Effect, 'r_'))
+#post_summary %>% kable(digits = 3, align = 'c')
+kable(post_summary_fixed, digits = 3, align = 'c') %>% kable_styling(position = "center", latex_options = "HOLD_position")
 ```
