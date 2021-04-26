@@ -403,13 +403,13 @@ post_summary %>%
   kable_styling(position = "center",latex_options = "HOLD_position")
 ```
 
-One example interpretation: holding all else constant, a 26-40 year old CST voter has an expected increase in probability of voting of 0.239 compared to an 18-25 year old CST voter. All age effects are significant, and we observe an increase of voter turnout with age (again, for CST party only).
+Holding all else constant, 
 
-```{r}
-# An 26-40 year old CST voter has an expected increase in probability of voting of 0.239
-#A 41-65 year old CST voter has an expected increase in probability of voting of 0.259
-#A 66+ year old CST voter has an expected increase in probability of voting of 0.339 
-```
+- An 26-40 year old CST voter has an expected increase in probability of voting of 0.239
+- A 41-65 year old CST voter has an expected increase in probability of voting of 0.259
+- A 66+ year old CST voter has an expected increase in probability of voting of 0.339
+
+compared to an 18-25 year old CST voter. All age effects are significant, and we observe an increase of voter turnout with age (again, for CST party only).
 
 ### Sex
 
@@ -448,15 +448,15 @@ post_summary %>%
   kable_styling(position = "center", latex_options = "HOLD_position")
 ```
 
-One interpretation given (other follow similarly). Holding all else constant, 18-25 year old female Democrat voters have an expected increase in the probability of voting of 0.253 compared to 18-25 year old female CST voters. This effect only appears to be significant for Democrat and Republican voters however.
+Holding all else constant,
 
-```{r}
-# - 18-25 year old female Democrat voters have an expected increase in the probability of voting of 0.253
-# - 18-25 year old female GRE voters have an expected increase in the probability of voting of 0.087
-# - 18-25 year old female Libertarian voters have an expected increase in the probability of voting of 0.127
-# - 18-25 year old female Democrat voters have an expected increase in the probability of voting of 0.293
-# - 18-25 year old unaffiliated female voters have an expected increase in the probability of voting of 0.163
-```
+- 18-25 year old female Democrat voters have an expected increase in the probability of voting of 0.253
+- 18-25 year old female GRE voters have an expected increase in the probability of voting of 0.087
+- 18-25 year old female Libertarian voters have an expected increase in the probability of voting of 0.127
+- 18-25 year old female Democrat voters have an expected increase in the probability of voting of 0.293
+- 18-25 year old unaffiliated female voters have an expected increase in the probability of voting of 0.163
+
+compared to 18-25 year old female CST voters. This effect only appears to be significant for Democrat and Republican voters however.
 
 **2. Did the overall probability or odds of voting differ by county in 2020? Which counties differ the most from other counties?**
 
