@@ -507,7 +507,7 @@ For people who are unaffiliated with any party, the turnout rate for the registe
 
 ## Limitations
 
-Our analysis has several limitations. First, running brm model is quite time consuming, so we narrow down our dataset a lot and run as many iterations as possible on this smaller dataset. Next, we don't really try to use poststratification to reweight the estimate by the representation of each county. Thus, our sample could be slightly biased. Finally, because of the clear objectives given in research questions, we directly build our model based on questions of interest without diving into model selection too much.
+Our analysis has several limitations. First, running brm model is quite time consuming, so we narrow down our dataset a lot and run as many iterations as possible on this smaller dataset. This reduction in size of data may be the cause of wide confidence intervals around some our estimates. Next, we don't really try to use poststratification to reweight the estimate by the representation of each county. Thus, our sample could be slightly biased. This could explain why some of our estimates seem unexpectedly low (e.g., <5% turnout among registered voters of some groups. Finally, because of the clear objectives given in research questions, we directly build our model based on questions of interest without diving into model selection too much. Therefore there may be additional predictors that would approve our model's predictive power, but we did not consider them here.
 
 \newpage
 ## Appendix
