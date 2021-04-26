@@ -1,10 +1,10 @@
 ---
 title: \vspace{-1.5cm} \textbf{STA610 Case Study 2 Report}
 author:
-- Cole Juracek 
-- Lauren Palazzo 
-- Lingyu Zhou 
-- Fan Zhu
+- Cole Juracek (Checker and coordinator)
+- Lauren Palazzo (Programmer)
+- Lingyu Zhou (Writer)
+- Fan Zhu (Presenter)
 date: "`r Sys.Date()`"
 output:
   pdf_document: default
@@ -12,7 +12,7 @@ fontsize: 11pt
 geometry: margin=1.5cm
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE} 
 knitr::opts_chunk$set(echo = FALSE, cache=TRUE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 3, fig.align = 'center')
 ```
 
@@ -338,7 +338,7 @@ legend('bottomright', legend=paste('AUROC:', auc_ROCR %>% round(3)), col=c('blac
 
 ## Results & Findings
 
-Here are the results of our inference. Fixed effects are given by the `b_` prefix, while random effects are given by the `r_` prefix. Finally, an estimate for the between-county variance can be found under `sd_County__Intercept`.
+See the appendix for exact coefficient estimates and credible intervals. Relevant numbers for the research quetsions will be brought up as needed. Fixed effects are given by the `b_` prefix, while random effects are given by the `r_` prefix. Finally, an estimate for the between-county variance can be found under `sd_County__Intercept`.
 
 Coefficients are given on the *log-odds* scale of probability. Thus, we would interpret a fixed effect as the expected change in the log-odds of voting compared to the reference group, holding all else constant. We can exponentiate this coefficient to obtain the regular change in odds, or we can apply the inverse link function (sigmoid) to recover the expected change in probability.
 
