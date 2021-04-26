@@ -463,7 +463,17 @@ Female turnout was higher in the DEM, LIB, REP, and UNA parties, with difference
 
 **4. How did the turnout rates differ between age groups for the different party affiliations?**
 
-Mostly same as above. For each *party*, investigate turnout rate (obtained via `inv_logit_scaled`) between the age groups. This includes calculating the appropriate combination of main effects + interaction, and then converting to turnout.
+For the age groups, the people whose ages range from 18 to 25 belong to the reference group.
+
+For people who voted for the Democrats, the turnout rate for the registered voters who ages range from 18 to 25 is 6.85%. The turnout rate for the registered voters whose ages range from 26 to 40 is 7.85%. The turnout rate for the registered voters whose ages range from 41 to 65 is 17.80%. The turnout rate for the registered voters whose ages are over 66 is 17.91%.
+
+For people who voted for the Republicans, the turnout rate for the registered voters who ages range from 18 to 25 is 8.46%. The turnout rate for the registered voters whose ages range from 26 to 40 is 10.48%. The turnout rate for the registered voters whose ages range from 41 to 65 is 20.07%. The turnout rate for the registered voters whose ages are over 66 is 19.99%.
+
+For people who voted for the Libertarians, the turnout rate for the registered voters who ages range from 18 to 25 is 3.93%. The turnout rate for the registered voters whose ages range from 26 to 40 is 5.26%. The turnout rate for the registered voters whose ages range from 41 to 65 is 7.72%. The turnout rate for the registered voters whose ages are over 66 is 8.42%.
+
+For people who voted for the Green Party, the turnout rate for the registered voters who ages range from 18 to 25 is 3.31%. The turnout rate for the registered voters whose ages range from 26 to 40 is 3.84%. The turnout rate for the registered voters whose ages range from 41 to 65 is 6.86%. The turnout rate for the registered voters whose ages are over 66 is 4.22%.
+
+For people who are unaffiliated with any party, the turnout rate for the registered voters who ages range from 18 to 25 is 4.53%. The turnout rate for the registered voters whose ages range from 26 to 40 is 6.20%. The turnout rate for the registered voters whose ages range from 41 to 65 is 12.93%. The turnout rate for the registered voters whose ages are over 66 is 16.96%.
 
 \newpage
 ## Appendix
